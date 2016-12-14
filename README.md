@@ -4,7 +4,7 @@
 
 run testrpc:
 
- ``` cat testrpc_command.txt```
+ ``` cat testrpc_command.txt ```
 
 run shell script: 
 
