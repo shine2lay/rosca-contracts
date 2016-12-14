@@ -17,7 +17,7 @@ contract('ROSCA addMember Unit test', function(accounts) {
         yield rosca.addMember(accounts[4]);
         var memberAddresses = yield rosca.membersAddresses.call(4);
         var member = yield rosca.members.call(accounts[4]);
-        yield assert.equal(memberAddresses, accounts[4], "member's address didn't get registered properly");
-        yield assert.isOk(member[2], "member.alive didn't get registered properly");
+        return assert.equal(memberAddresses, accounts[4], "member's address didn't get registered properly") &&
+        assert.isOk(member[2], "member.alive didn't get registered properly");
     }));
 });
