@@ -2,12 +2,10 @@
 
 ``` npm install co ```
 
-run testrpc in ``` cat testrpc_command.txt```
-``` truffle compile ```
+run testrpc:
 
-``` truffle migrate --reset ```
+ ``` cat testrpc_command.txt```
 
-``` truffle test ```
+run shell script: 
 
-for testing individual file
-run truffle test *location of File
+``` tools/build/run-test.sh```
