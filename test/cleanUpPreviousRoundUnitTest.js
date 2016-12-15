@@ -13,7 +13,7 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
     var memberList = [accounts[1],accounts[2],accounts[3]];
     var serviceFee = 2;
 
-    it("check if totalDiscount is added when lowestBid < default_pot", co(function *() {
+    it("checks if totalDiscount is added when lowestBid < default_pot", co(function *() {
         var rosca = ROSCATest.deployed();
 
         web3.currentProvider.send({
@@ -35,7 +35,8 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
         return assert.equal(discount, DEFAULT_POT * 0.25, "toalDiscount value didn't get added properly");
 
     }));
-    it("watch for LogRoundFundsReleased event and check if winner gets proper values", co(function *() {
+
+    it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function *() {
         var rosca = ROSCATest.deployed();
 
         yield Promise.all([
@@ -46,16 +47,17 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
         fundsReleasedEvent.watch( co(function *(error,log) {
             fundsReleasedEvent.stopWatching();
 
-            var alive = yield rosca.members.call(log.args.winnerAddress);
-            assert.isOk(alive[2], "chosen address is not a member");
-            assert.isOk(alive[1], "Paid member was chosen");
-            assert.equal(alive[0].toString(), CONTRIBUTION_SIZE + DEFAULT_POT * 0.68 * FEE,"winningBid is not Default_POT");
+            var user = yield rosca.members.call(log.args.winnerAddress);
+            assert.equal(accounts[1], log.args.winnerAddress);
+            assert.isOk(user[2], "chosen address is not a member");
+            assert.isOk(user[1], "Paid member was chosen");
+            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + DEFAULT_POT * 0.68 * FEE,"winningBid is not Default_POT");
         }));
         yield rosca.cleanUpPreviousRound();
 
         yield Promise.delay(200);
-
     }));
+
     it("winnerAddress == 0, check if random unpaid member is picked", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
@@ -75,10 +77,10 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
         ]);
         var credit_before = yield rosca.members.call(accounts[3]);
         yield rosca.cleanUpPreviousRound();
-        var credit_after = yield rosca.members.call(accounts[3]);
+        var actual_credit = yield rosca.members.call(accounts[3]);
         var bidPlaced = DEFAULT_POT * 0.8;
-        var credit_check = credit_before[0].add(bidPlaced * FEE);
+        var expected_credit = credit_before[0].add(bidPlaced * FEE);
 
-        return assert.equal(credit_after[0].toString(), credit_check.toString(), "lowestBid is not deposited into winner's credit");
+        return assert.equal(actual_credit[0].toString(), expected_credit.toString(), "lowestBid is not deposited into winner's credit");
     })); 
 });

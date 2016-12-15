@@ -26,11 +26,12 @@ contract('ROSCA startRound Unit test', function(accounts) {
         var winner = yield rosca.winnerAddress.call();
         var currentRound = yield rosca.currentRound.call();
 
-        assert.equal(currentRound, 1, "currentRound should be 1 but it is not ");
+        assert.equal(currentRound, 1, " ");
         assert.equal(bid, DEFAULT_POT + 1, "lowestBid hasn't be set to Default pot +1");
         assert.equal(winner, "0x0000000000000000000000000000000000000000", "winnerAddress is not empty");
     }));
-    it("watch for LogstartOfRound event", co(function *() {
+
+    it("watches for LogstartOfRound event", co(function *() {
         var rosca = ROSCATest.deployed();
 
         var startOfRoundEvent = rosca.LogStartOfRound();
@@ -47,7 +48,8 @@ contract('ROSCA startRound Unit test', function(accounts) {
 
         yield rosca.startRound();
     }));
-    it("currentRound >= members.length", co(function *() {
+
+    it("Calling startRound when currentRound >= members.length", co(function *() {
         var rosca = ROSCATest.deployed();
         var currentRound = yield rosca.currentRound.call();
          do{
@@ -59,16 +61,17 @@ contract('ROSCA startRound Unit test', function(accounts) {
             });
             yield rosca.startRound();
             currentRound++;
-        }while(currentRound < 5);
-        var ended= yield rosca.endOfROSCA.call();
+        } while(currentRound < MEMBER_COUNT + 1);
+        var ended = yield rosca.endOfROSCA.call();
         assert.isOk(ended, "Round 5 and endOfROSCA is false" );
     }));
+
     it("Throws when calling startRound before roundStartTime (including round = 0)", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
         var rosca = yield ROSCATest.new(roundPeriodInDays, CONTRIBUTION_SIZE, DayFromNow, memberList, serviceFee);
-        while(true) {
+        while (true) {
             yield rosca.startRound().then(function () {
                 assert.isNotOk(true, "calling startRound before roundStartTime succeed when it should throw");
             }).catch(function (e) {
@@ -76,7 +79,7 @@ contract('ROSCA startRound Unit test', function(accounts) {
             });
 
             var endOfROSCA = yield rosca.endOfROSCA.call();
-            if(endOfROSCA) break;
+            if (endOfROSCA) break;
             web3.currentProvider.send({
                 jsonrpc: "2.0",
                 method: "evm_increaseTime",
