@@ -1,7 +1,7 @@
 var Promise = require("bluebird");
 var co = require("co").wrap;
 
-contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
+contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     const MIN_START_DELAY = 86400 + 20;
     const MEMBER_COUNT = 4;
     const CONTRIBUTION_SIZE = 1e16;

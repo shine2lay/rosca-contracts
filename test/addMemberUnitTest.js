@@ -1,5 +1,5 @@
 var co = require("co").wrap;
-contract('ROSCA addMember Unit test', function(accounts) {
+contract('ROSCA addMember Unit Test', function(accounts) {
 
     const CONTRIBUTION_SIZE = 1e16;
     const ROUND_PERIOD_IN_DAYS = 3;
