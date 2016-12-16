@@ -14,7 +14,11 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
     var serviceFee = 2;
 
     it("checks if totalDiscount is added when lowestBid < default_pot", co(function *() {
-        var rosca = ROSCATest.deployed();
+        var latestBlock = web3.eth.getBlock("latest");
+        var simulatedTimeNow = latestBlock.timestamp;
+        var DayFromNow = simulatedTimeNow + 86400 + 10;
+
+        var rosca = yield ROSCATest.new(roundPeriodInDays, CONTRIBUTION_SIZE, DayFromNow, memberList, serviceFee);
 
         const BID_PERCENT = 0.75;
 
@@ -39,11 +43,23 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function *() {
-        var rosca = ROSCATest.deployed();
+        var latestBlock = web3.eth.getBlock("latest");
+        var simulatedTimeNow = latestBlock.timestamp;
+        var DayFromNow = simulatedTimeNow + 86400 + 10;
+
+        var rosca = yield ROSCATest.new(roundPeriodInDays, CONTRIBUTION_SIZE, DayFromNow, memberList, serviceFee);
 
         const BID_PERCENT = 0.68;
 
+        web3.currentProvider.send({
+            jsonrpc: "2.0",
+            method: "evm_increaseTime",
+            params: [MIN_START_DELAY],
+            id: new Date().getTime()
+        });
+
         yield Promise.all([
+            rosca.startRound(),
             rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE}),
             rosca.bid(DEFAULT_POT * BID_PERCENT, {from: accounts[1]})
         ]);
