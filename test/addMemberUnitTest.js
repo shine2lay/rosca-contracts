@@ -11,7 +11,7 @@ contract('ROSCA addMember Unit test', function(accounts) {
         });
     });
 
-    it("check if membersAddresses.length goes up by 1 after calling", co(function *() {
+    it("checks if membersAddresses.length goes up by 1 after calling", co(function *() {
         var rosca = ROSCATest.deployed();
 
         yield rosca.addMember(accounts[4]);

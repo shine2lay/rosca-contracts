@@ -77,8 +77,9 @@ contract('ROSCA startRound Unit test', function(accounts) {
             yield rosca.startRound();
 
         }
+
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}).then(function () {
-            assert.isNotOk(true, "calling contribute after ROSCAended succeed when it should throw");
+            assert.isNotOk(true, "Calling contribute after ROSCA ended was expected to throw");
         }).catch(function (e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
         });

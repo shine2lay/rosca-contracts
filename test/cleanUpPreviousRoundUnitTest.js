@@ -35,7 +35,7 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
 
         var discount = yield rosca.totalDiscounts.call();
 
-        return assert.equal(discount, DEFAULT_POT * (1 - WINNING_BID_PERCENT), "toalDiscount value didn't get added properly");
+        return assert.equal(discount, DEFAULT_POT * (1 - BID_PERCENT), "toalDiscount value didn't get added properly");
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function *() {
@@ -87,7 +87,7 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
         var credit_before = yield rosca.members.call(accounts[3]);
         yield rosca.cleanUpPreviousRound();
         var actual_credit = yield rosca.members.call(accounts[3]);
-        var lowestBid = DEFAULT_POT + 1;
+        var lowestBid = DEFAULT_POT;
         var expected_credit = credit_before[0].add(lowestBid * FEE);
 
         return assert.equal(actual_credit[0].toString(), expected_credit.toString(), "lowestBid is not deposited into winner's credit");
