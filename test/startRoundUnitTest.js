@@ -34,9 +34,12 @@ contract('ROSCA startRound Unit test', function(accounts) {
     it("watches for LogstartOfRound event", co(function *() {
         var rosca = ROSCATest.deployed();
 
+        var eventFired = false;
         var startOfRoundEvent = rosca.LogStartOfRound();
+
         startOfRoundEvent.watch(function(error,log){
             startOfRoundEvent.stopWatching();
+            eventFired = true;
             assert.equal(log.args.currentRound, 2, "Log didnt show currentRound properly");
         });
         web3.currentProvider.send({
@@ -47,23 +50,8 @@ contract('ROSCA startRound Unit test', function(accounts) {
         });
 
         yield rosca.startRound();
-    }));
 
-    it("Calling startRound when currentRound >= members.length", co(function *() {
-        var rosca = ROSCATest.deployed();
-        var currentRound = yield rosca.currentRound.call();
-         do{
-            web3.currentProvider.send({
-                jsonrpc: "2.0",
-                method: "evm_increaseTime",
-                params: [ROUND_PERIOD_DELAY],
-                id: new Date().getTime()
-            });
-            yield rosca.startRound();
-            currentRound++;
-        } while(currentRound < MEMBER_COUNT + 1);
-        var ended = yield rosca.endOfROSCA.call();
-        assert.isOk(ended, "Round 5 and endOfROSCA is false" );
+        assert.isOk(eventFired, "startOfRound event didn't fire");
     }));
 
     it("Throws when calling startRound before roundStartTime (including round = 0)", co(function *() {
@@ -87,6 +75,12 @@ contract('ROSCA startRound Unit test', function(accounts) {
                 id: new Date().getTime()
             });
             yield rosca.startRound();
+
         }
+        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}).then(function () {
+            assert.isNotOk(true, "calling contribute after ROSCAended succeed when it should throw");
+        }).catch(function (e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+        });
     }));
 });
