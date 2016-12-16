@@ -8,17 +8,16 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
     const FEE = (1 - 0.002);
 
-    var contributionSize = 1e16;
-    var roundPeriodInDays = 3;
-    var memberList = [accounts[1],accounts[2],accounts[3]];
-    var serviceFee = 2;
+    const ROUND_PERIOD_IN_DAYS = 3;
+    const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
+    const SERVICE_FEE = 2;
 
     it("checks if totalDiscount is added when lowestBid < default_pot", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(roundPeriodInDays, CONTRIBUTION_SIZE, DayFromNow, memberList, serviceFee);
+        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
 
         const BID_PERCENT = 0.75;
 
@@ -47,7 +46,7 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(roundPeriodInDays, CONTRIBUTION_SIZE, DayFromNow, memberList, serviceFee);
+        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
 
         const BID_PERCENT = 0.68;
 
@@ -87,7 +86,7 @@ contract('ROSCA cleanUpPreviousRound Unit test', function(accounts) {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10 ;
-        var rosca = yield ROSCATest.new(roundPeriodInDays, contributionSize, DayFromNow, memberList, serviceFee);
+        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
 
         web3.currentProvider.send({
             jsonrpc: "2.0",

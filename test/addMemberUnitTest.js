@@ -1,10 +1,10 @@
 var co = require("co").wrap;
 contract('ROSCA addMember Unit test', function(accounts) {
 
-    var contributionSize = 1e17;
-    var roundPeriodInDays = 3;
-    var memberList = [accounts[1],accounts[2],accounts[3]];
-    var serviceFee = 2;
+    const CONTRIBUTION_SIZE = 1e16;
+    const ROUND_PERIOD_IN_DAYS = 3;
+    const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
+    const SERVICE_FEE = 2;
 
     it("throws when adding an existing member", function () {
         var rosca = ROSCATest.deployed();
@@ -21,7 +21,7 @@ contract('ROSCA addMember Unit test', function(accounts) {
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(roundPeriodInDays, contributionSize, DayFromNow, memberList, serviceFee);
+        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         const CONTRIBUTION = 1e17;
 
         yield rosca.contribute({from: accounts[4], value: CONTRIBUTION}).then(function() {
@@ -32,7 +32,7 @@ contract('ROSCA addMember Unit test', function(accounts) {
         yield rosca.addMember(accounts[4]);
         yield rosca.contribute({from: accounts[4], value: CONTRIBUTION});
 
-        var user = rosca.members.call(accounts[4]);
+        var user = yield rosca.members.call(accounts[4]);
 
         assert.equal(user[0], CONTRIBUTION, "newly added member couldn't contribute");
 
