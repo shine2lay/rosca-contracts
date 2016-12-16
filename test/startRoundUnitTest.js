@@ -11,28 +11,12 @@ contract('ROSCA startRound Unit test', function(accounts) {
     var memberList = [accounts[1],accounts[2],accounts[3]];
     var serviceFee = 2;
 
-    it("Calling startRound when currentRound == 0, check if lowestBid is set and winnerAddress = 0", co(function *() {
-        var rosca = ROSCATest.deployed();
-
-        web3.currentProvider.send({
-            jsonrpc: "2.0",
-            method: "evm_increaseTime",
-            params: [MIN_START_DELAY],
-            id: new Date().getTime()
-        });
-
-        yield rosca.startRound();
-        var bid = yield rosca.lowestBid.call();
-        var winner = yield rosca.winnerAddress.call();
-        var currentRound = yield rosca.currentRound.call();
-
-        assert.equal(currentRound, 1, " ");
-        assert.equal(bid, DEFAULT_POT + 1, "lowestBid hasn't be set to Default pot +1");
-        assert.equal(winner, "0x0000000000000000000000000000000000000000", "winnerAddress is not empty");
-    }));
-
     it("watches for LogstartOfRound event", co(function *() {
-        var rosca = ROSCATest.deployed();
+        var latestBlock = web3.eth.getBlock("latest");
+        var simulatedTimeNow = latestBlock.timestamp;
+        var DayFromNow = simulatedTimeNow + 86400 + 10;
+
+        var rosca = yield ROSCATest.new(roundPeriodInDays, CONTRIBUTION_SIZE, DayFromNow, memberList, serviceFee);
 
         var eventFired = false;
         var startOfRoundEvent = rosca.LogStartOfRound();
@@ -58,6 +42,7 @@ contract('ROSCA startRound Unit test', function(accounts) {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
+
         var rosca = yield ROSCATest.new(roundPeriodInDays, CONTRIBUTION_SIZE, DayFromNow, memberList, serviceFee);
         while (true) {
             yield rosca.startRound().then(function () {

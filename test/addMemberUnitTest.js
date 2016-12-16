@@ -11,14 +11,21 @@ contract('ROSCA addMember Unit test', function(accounts) {
         });
     });
 
-    it("checks if membersAddresses.length goes up by 1 after calling", co(function *() {
+    it("checks member gets added properly", co(function *() {
         var rosca = ROSCATest.deployed();
+        const CONTRIBUTION = 1e17;
 
+        yield rosca.contribute({from: accounts[4], value: CONTRIBUTION}).then(function() {
+            assert.isNotOk(true, "expected calling contribute from non-member to throw");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+        });
         yield rosca.addMember(accounts[4]);
-        var memberAddresses = yield rosca.membersAddresses.call(4);
-        var member = yield rosca.members.call(accounts[4]);
+        yield rosca.contribute({from: accounts[4], value: CONTRIBUTION});
 
-        assert.equal(memberAddresses, accounts[4], "member's address didn't get registered properly");
-        assert.isOk(member[2], "member.alive didn't get registered properly");
+        var user = rosca.members.call(accounts[4]);
+
+        assert.equal(user[0], CONTRIBUTION, "newly added member couldn't contribute");
+
     }));
 });
