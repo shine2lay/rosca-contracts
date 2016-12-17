@@ -12,7 +12,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const SERVICE_FEE = 2;
 
-    it("checks if totalDiscount is added when lowestBid < default_pot", co(function *() {
+    it("checks if totalDiscount is added when lowestBid < DEFAULT_POT", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
@@ -29,7 +29,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         });
 
         yield Promise.all([
-            rosca.startRound(), // needed to set lowestBid value, + winnerAddress to 0
+            rosca.startRound(), // needed to set lowestBid value + winnerAddress to 0
             rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}),
             rosca.bid(DEFAULT_POT * BID_PERCENT, {from: accounts[0]})
         ]);
@@ -73,7 +73,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             assert.equal(accounts[1], log.args.winnerAddress);
             assert.isOk(user[2], "chosen address is not a member"); // user.alive
             assert.isOk(user[1], "Paid member was chosen"); // user.paid
-            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + DEFAULT_POT * BID_PERCENT * FEE,"winningBid is not Default_POT"); // user.credit
+            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + DEFAULT_POT * BID_PERCENT * FEE, "winningBid is not Default_POT"); // user.credit
         }));
 
         yield rosca.cleanUpPreviousRound();
@@ -96,11 +96,11 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         });
         yield Promise.all([
             rosca.startRound(),
-            rosca.contribute({from: accounts[3], value: CONTRIBUTION_SIZE}),
+            rosca.contribute({from: accounts[3], value: CONTRIBUTION_SIZE}), // member 3 will be eligible to win the pot by default
         ]);
 
         var credit_before = yield rosca.members.call(accounts[3]);
-        yield rosca.cleanUpPreviousRound();
+        yield rosca.cleanUpPreviousRound(); // only member 3 can get the Pot by default
         var actual_credit = yield rosca.members.call(accounts[3]);
         var lowestBid = DEFAULT_POT;
         var expected_credit = credit_before[0].add(lowestBid * FEE);

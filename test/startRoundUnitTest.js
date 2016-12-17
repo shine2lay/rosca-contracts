@@ -45,14 +45,15 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
         var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
-        var i;
-        for(i = 0 ; i < MEMBER_COUNT + 1; i++) {
+
+        for (var i = 0 ; i < MEMBER_COUNT + 1; i++) {
             yield rosca.startRound().then(function () {
                 assert.isNotOk(true, "expected calling startRound before roundStartTime to throw");
             }).catch(function (e) {
                 assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
             });
 
+            yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
             web3.currentProvider.send({
                 jsonrpc: "2.0",
@@ -63,7 +64,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
             yield rosca.startRound();
         }
 
-        return rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}).then(function () {
+        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}).then(function () {
             assert.isNotOk(true, "Calling contribute after ROSCA ended was expected to throw");
         }).catch(function (e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");

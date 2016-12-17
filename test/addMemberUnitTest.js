@@ -34,7 +34,7 @@ contract('ROSCA addMember Unit Test', function(accounts) {
 
         var user = yield rosca.members.call(accounts[4]);
 
-        assert.equal(user[0], CONTRIBUTION, "newly added member couldn't contribute");
+        assert.equal(user[0], CONTRIBUTION, "newly added member couldn't contribute"); // user.credit
 
     }));
 });
