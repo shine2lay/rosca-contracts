@@ -96,15 +96,25 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         });
         yield Promise.all([
             rosca.startRound(),
+            rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}), // member 0 will be eligible to win the pot by default
+            rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE}), // member 1 will be eligible to win the pot by default
+            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}), // member 2 will be eligible to win the pot by default
             rosca.contribute({from: accounts[3], value: CONTRIBUTION_SIZE}), // member 3 will be eligible to win the pot by default
         ]);
+        var winner;
+        var eventFired = false;
+        var fundsReleasedEvent = rosca.LogRoundFundsReleased();
+        fundsReleasedEvent.watch(co(function *(error,log) {
+            fundsReleasedEvent.stopWatching();
+            eventFired = true;
 
-        var credit_before = yield rosca.members.call(accounts[3]);
-        yield rosca.cleanUpPreviousRound(); // only member 3 can get the Pot by default
-        var actual_credit = yield rosca.members.call(accounts[3]);
-        var lowestBid = DEFAULT_POT;
-        var expected_credit = credit_before[0].add(lowestBid * FEE);
+            winner = yield rosca.members.call(log.args.winnerAddress);
+        }));
 
-        return assert.equal(actual_credit[0].toString(), expected_credit.toString(), "lowestBid is not deposited into winner's credit");
+        yield rosca.cleanUpPreviousRound();
+
+        yield Promise.delay(300);
+        assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
+        assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT * FEE, "lowestBid is not deposited into winner's credit"); // winner.credit
     })); 
 });
