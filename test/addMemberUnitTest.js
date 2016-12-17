@@ -16,25 +16,24 @@ contract('ROSCA addMember Unit Test', function(accounts) {
         });
     });
 
-    it("checks member gets added properly", co(function *() {
+    it("checks member get added properly", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
         var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
-        const CONTRIBUTION = 1e17;
 
-        yield rosca.contribute({from: accounts[4], value: CONTRIBUTION}).then(function() {
+        yield rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}).then(function() {
             assert.isNotOk(true, "expected calling contribute from non-member to throw");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
         });
         yield rosca.addMember(accounts[4]);
-        yield rosca.contribute({from: accounts[4], value: CONTRIBUTION});
+        yield rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE});
 
         var user = yield rosca.members.call(accounts[4]);
 
-        assert.equal(user[0], CONTRIBUTION, "newly added member couldn't contribute"); // user.credit
+        assert.equal(user[0], CONTRIBUTION_SIZE, "newly added member couldn't contribute"); // user.credit
 
     }));
 });
