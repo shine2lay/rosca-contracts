@@ -82,7 +82,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         assert.isOk(eventFired);
     }));
 
-    it("check if random unpaid member in goodStanding is picked when no bid was placed", co(function *() {
+    it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10 ;
@@ -100,12 +100,15 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}), // member 2 will be eligible to win the pot if no bid was placed
         ]);
         var winner;
+        var possibleWinner = [accounts[0], accounts[2]];
+        var winnerAddress = 0;
+
         var eventFired = false;
         var fundsReleasedEvent = rosca.LogRoundFundsReleased();
         fundsReleasedEvent.watch(co(function *(error,log) {
             fundsReleasedEvent.stopWatching();
             eventFired = true;
-
+            winnerAddress = log.args.winnerAddress;
             winner = yield rosca.members.call(log.args.winnerAddress);
         }));
 
@@ -113,6 +116,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         yield Promise.delay(300);
         assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
+        assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
         assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT * FEE, "lowestBid is not deposited into winner's credit"); // winner.credit
         assert.isOk(winner[3], "a non member was chosen when there were no bids")
     }));
