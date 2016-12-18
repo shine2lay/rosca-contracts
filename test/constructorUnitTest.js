@@ -16,7 +16,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         simulatedTimeNow = latestBlock.timestamp;
         twoDayFromNow = simulatedTimeNow + 86400 * 2 ;
 
-        return ROSCA.new(0, CONTRIBUTION_SIZE, twoDayFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
+        return ROSCATest.new(0, CONTRIBUTION_SIZE, twoDayFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
             assert.isNotOk(true, "contract creation successful");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
@@ -28,7 +28,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         simulatedTimeNow = latestBlock.timestamp;
         twoDayFromNow = simulatedTimeNow + 86400 * 2 ;
 
-        return ROSCA.new(31, CONTRIBUTION_SIZE, twoDayFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
+        return ROSCATest.new(31, CONTRIBUTION_SIZE, twoDayFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
             assert.isNotOk(true, "contract creation successful");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
@@ -40,7 +40,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         simulatedTimeNow = latestBlock.timestamp;
         twoDayFromNow = simulatedTimeNow + 86400 * 2 ;
 
-        return ROSCA.new(ROUND_PERIOD_IN_DAYS, 1e14, twoDayFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
+        return ROSCATest.new(ROUND_PERIOD_IN_DAYS, 1e14, twoDayFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
             assert.isNotOk(true, "contract creation successful");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
@@ -52,7 +52,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         simulatedTimeNow = latestBlock.timestamp;
         twoDayFromNow = simulatedTimeNow + 86400 * 2;
 
-        return ROSCA.new(ROUND_PERIOD_IN_DAYS, 1e21, twoDayFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
+        return ROSCATest.new(ROUND_PERIOD_IN_DAYS, 1e21, twoDayFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
             assert.isNotOk(true, "contract creation successful");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
@@ -63,7 +63,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         latestBlock = web3.eth.getBlock("latest");
         simulatedTimeNow = latestBlock.timestamp;
         twoDayFromNow = simulatedTimeNow + 86400 * 2;
-        return ROSCA.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, hourFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
+        return ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, hourFromNow, MEMBER_LIST, SERVICE_FEE).then(function() {
             assert.isNotOk(true, "contract creation successful");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
@@ -74,7 +74,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         latestBlock = web3.eth.getBlock("latest");
         simulatedTimeNow = latestBlock.timestamp;
         twoDayFromNow = simulatedTimeNow + 86400 * 2 ;
-        return ROSCA.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, twoDayFromNow, MEMBER_LIST, -1).then(function() {
+        return ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, twoDayFromNow, MEMBER_LIST, -1).then(function() {
             assert.isNotOk(true, "contract creation successful");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
@@ -85,7 +85,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         latestBlock = web3.eth.getBlock("latest");
         simulatedTimeNow = latestBlock.timestamp;
         twoDayFromNow = simulatedTimeNow + 86400 * 2 ;
-        return ROSCA.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, twoDayFromNow, MEMBER_LIST, 21).then(function() {
+        return ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, twoDayFromNow, MEMBER_LIST, 21).then(function() {
             assert.isNotOk(true , "contract creation successful");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
