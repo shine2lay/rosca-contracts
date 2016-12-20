@@ -1,5 +1,6 @@
-var Promise = require("bluebird");
-var co = require("co").wrap;
+let Promise = require("bluebird");
+let co = require("co").wrap;
+let assert = require("chai").assert;
 
 contract('ROSCA contribute Unit Test', function(accounts) {
     const ROUND_PERIOD_DELAY = 86400 * 3;
@@ -15,7 +16,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
         var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
-
+        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
         return rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}).then(function() {
             assert.isNotOk(true, "calling contribute from a non-member success");
         }).catch(function(e) {
@@ -23,23 +24,27 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         });
     }));
 
-    it("Testing for event LogContributionMade()", co(function *() {
+    it("generates a LogContributionMade event after a successful event", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
         var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        const ACTUAL_CONTRIBUTION  = CONTRIBUTION_SIZE * 0.1;
 
+        var eventFired = false;
         var contributionMadeEvent = rosca.LogContributionMade();
         contributionMadeEvent.watch(function(error,log){
             contributionMadeEvent.stopWatching();
+            eventFired = true;
             assert.equal(log.args.user, accounts[1], "LogContributionMade doesn't display proper user value");
-            assert.equal(log.args.amount, CONTRIBUTION_SIZE * 0.1, "LogContributionMade doesn't display proper amount value");
+            assert.equal(log.args.amount, ACTUAL_CONTRIBUTION, "LogContributionMade doesn't display proper amount value");
         });
 
-        yield rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE * 0.1});
+        yield rosca.contribute({from: accounts[1], value: ACTUAL_CONTRIBUTION});
 
         yield Promise.delay(300);
+        assert.isOk(eventFired, "LogContributionMade event did not fire");
     }));
 
     it("Checks whether the contributed value gets registered properly", co(function *() {
@@ -48,10 +53,12 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
         var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        const CONTRIBUTION_CHECK = CONTRIBUTION_SIZE * 1.2;
 
+        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE * 0.2});
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
         var credit_after = yield rosca.members.call(accounts[2]);
-        assert.equal(credit_after[0], CONTRIBUTION_SIZE, "contribution's credit value didn't get registered properly");
+        assert.equal(credit_after[0], CONTRIBUTION_CHECK, "contribution's credit value didn't get registered properly");
     }));
 
 });
