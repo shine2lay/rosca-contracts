@@ -16,7 +16,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         var DayFromNow = simulatedTimeNow + 86400 + 10;
 
         var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
-        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
+        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}); // check if valid contribution can be made
         return rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}).then(function() {
             assert.isNotOk(true, "calling contribute from a non-member success");
         }).catch(function(e) {
@@ -24,7 +24,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         });
     }));
 
-    it("generates a LogContributionMade event after a successful event", co(function *() {
+    it("generates a LogContributionMade event after a successful contribution", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
         var DayFromNow = simulatedTimeNow + 86400 + 10;
