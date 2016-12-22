@@ -15,56 +15,46 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const SERVICE_FEE = 2;
 
-    it("checks if totalDiscount is added when lowestBid < DEFAULT_POT", co(function *() {
-        let latestBlock = web3.eth.getBlock("latest");
-        let simulatedTimeNow = latestBlock.timestamp;
-        let DayFromNow = simulatedTimeNow + 86400 + 10;
+    function createROSCA() {
+        utils.mine();
 
-        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let latestBlock = web3.eth.getBlock("latest");
+        let blockTime = latestBlock.timestamp;
+        return ROSCATest.new(
+            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + ROSCA_START_TIME_DELAY, MEMBER_LIST,
+            SERVICE_FEE);
+    }
+
+    it("checks if totalDiscount is added when lowestBid < DEFAULT_POT", co(function *() {
+        let rosca = yield createROSCA();
 
         const BID_PERCENT = 0.75;
 
-        web3.currentProvider.send({
-            jsonrpc: "2.0",
-            method: "evm_increaseTime",
-            params: [MIN_START_DELAY],
-            id: new Date().getTime()
-        });
-
+        utils.increaseTime(MIN_START_DELAY);
         yield Promise.all([
             rosca.startRound(), // needed to set lowestBid value + winnerAddress to 0
             rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}),
-            rosca.bid(DEFAULT_POT * BID_PERCENT, {from: accounts[0]})
+            rosca.bid(DEFAULT_POT * BID_PERCENT, {from: accounts[0]}),
+            rosca.cleanUpPreviousRound()
         ]);
-
-        yield rosca.cleanUpPreviousRound();
 
         let discount = yield rosca.totalDiscounts.call();
 
-        return assert.equal(discount, DEFAULT_POT * (1 - BID_PERCENT), "toalDiscount value didn't get added properly");
+        assert.equal(discount, DEFAULT_POT * (1 - BID_PERCENT), "toalDiscount value didn't get added properly");
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function *() {
-        let latestBlock = web3.eth.getBlock("latest");
-        let simulatedTimeNow = latestBlock.timestamp;
-        let DayFromNow = simulatedTimeNow + 86400 + 10;
+        let rosca = yield createROSCA();
 
-        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        const BID_TO_PLACE = DEFAULT_POT * 0.68;
 
-        const BID_PERCENT = 0.68;
-
-        web3.currentProvider.send({
-            jsonrpc: "2.0",
-            method: "evm_increaseTime",
-            params: [MIN_START_DELAY],
-            id: new Date().getTime()
-        });
-
+        utils.increaseTime(MIN_START_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE}),
-            rosca.bid(DEFAULT_POT * BID_PERCENT, {from: accounts[1]})
+            rosca.bid(BID_TO_PLACE, {from: accounts[1]})
         ]);
+
         let eventFired = false;
         let fundsReleasedEvent = rosca.LogRoundFundsReleased();
 
@@ -76,7 +66,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             assert.equal(accounts[1], log.args.winnerAddress);
             assert.isOk(user[2], "chosen address is not a member"); // user.alive
             assert.isOk(user[1], "Paid member was chosen"); // user.paid
-            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + DEFAULT_POT * BID_PERCENT * FEE, "winningBid is not Default_POT"); // user.credit
+            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + BID_TO_PLACE * FEE, "winningBid is not Default_POT"); // user.credit
         }));
 
         yield rosca.cleanUpPreviousRound();
@@ -86,22 +76,15 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function *() {
-        let latestBlock = web3.eth.getBlock("latest");
-        let simulatedTimeNow = latestBlock.timestamp;
-        let DayFromNow = simulatedTimeNow + 86400 + 10 ;
-        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield createROSCA();
 
-        web3.currentProvider.send({
-            jsonrpc: "2.0",
-            method: "evm_increaseTime",
-            params: [MIN_START_DELAY],
-            id: new Date().getTime()
-        });
+        utils.increaseTime(MIN_START_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}), // member 0 will be eligible to win the pot if no bid was placed
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}), // member 2 will be eligible to win the pot if no bid was placed
         ]);
+
         let winner;
         let possibleWinner = [accounts[0], accounts[2]];
         let winnerAddress = 0;
@@ -118,6 +101,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         yield rosca.cleanUpPreviousRound();
 
         yield Promise.delay(300);
+
         assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
         assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT * FEE, "lowestBid is not deposited into winner's credit"); // winner.credit

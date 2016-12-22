@@ -10,28 +10,29 @@ contract('ROSCA contribute Unit Test', function(accounts) {
 
     const ROUND_PERIOD_IN_DAYS = 3;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
-    const SERVICE_FEE = 20;
+    const SERVICE_FEE = 2;
+
+    function createROSCA() {
+        utils.mine();
+
+        let latestBlock = web3.eth.getBlock("latest");
+        let blockTime = latestBlock.timestamp;
+        return ROSCATest.new(
+            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + ROSCA_START_TIME_DELAY, MEMBER_LIST,
+            SERVICE_FEE);
+    }
 
     it("Throws when calling contribute from a non-member", co(function *() {
-        let latestBlock = web3.eth.getBlock("latest");
-        let simulatedTimeNow = latestBlock.timestamp;
-        let DayFromNow = simulatedTimeNow + 86400 + 10;
+        let rosca = yield createROSCA();
 
-        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}); // check if valid contribution can be made
-        return rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}).then(function() {
-            assert.isNotOk(true, "calling contribute from a non-member success");
-        }).catch(function(e) {
-            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
-        });
+
+        yield utils.assertThrows(rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}), "calling contribute from a non-member success");
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function *() {
-        let latestBlock = web3.eth.getBlock("latest");
-        let simulatedTimeNow = latestBlock.timestamp;
-        let DayFromNow = simulatedTimeNow + 86400 + 10;
+        let rosca = yield createROSCA();
 
-        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         const ACTUAL_CONTRIBUTION  = CONTRIBUTION_SIZE * 0.1;
 
         let eventFired = false;
@@ -50,16 +51,16 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("Checks whether the contributed value gets registered properly", co(function *() {
-        let latestBlock = web3.eth.getBlock("latest");
-        let simulatedTimeNow = latestBlock.timestamp;
-        let DayFromNow = simulatedTimeNow + 86400 + 10;
+        let rosca = yield createROSCA();
 
-        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         const CONTRIBUTION_CHECK = CONTRIBUTION_SIZE * 1.2;
 
-        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE * 0.2});
-        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
+        yield Promise.all([
+            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE * 0.2}),
+            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE})
+        ]);
         let credit_after = yield rosca.members.call(accounts[2]);
+
         assert.equal(credit_after[0], CONTRIBUTION_CHECK, "contribution's credit value didn't get registered properly");
     }));
 

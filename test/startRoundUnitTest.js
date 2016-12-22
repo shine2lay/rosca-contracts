@@ -16,63 +16,48 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const SERVICE_FEE = 2;
 
-    it("watches for LogstartOfRound event", co(function *() {
-        let latestBlock = web3.eth.getBlock("latest");
-        let simulatedTimeNow = latestBlock.timestamp;
-        let DayFromNow = simulatedTimeNow + 86400 + 10;
+    function createROSCA() {
+        utils.mine();
 
-        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let latestBlock = web3.eth.getBlock("latest");
+        let blockTime = latestBlock.timestamp;
+        return ROSCATest.new(
+            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + ROSCA_START_TIME_DELAY, MEMBER_LIST,
+            SERVICE_FEE);
+    }
+
+    it("watches for LogstartOfRound event", co(function *() {
+        let rosca = yield createROSCA();
 
         let eventFired = false;
         let startOfRoundEvent = rosca.LogStartOfRound();
-
         startOfRoundEvent.watch(function(error,log){
             startOfRoundEvent.stopWatching();
             eventFired = true;
             assert.equal(log.args.currentRound, 1, "Log didnt show currentRound properly");
         });
-        web3.currentProvider.send({
-            jsonrpc: "2.0",
-            method: "evm_increaseTime",
-            params: [ROUND_PERIOD_DELAY],
-            id: new Date().getTime()
-        });
 
+        utils.increaseTime(MIN_START_DELAY);
         yield rosca.startRound();
+
         yield Promise.delay(300);
 
         assert.isOk(eventFired, "startOfRound event didn't fire");
     }));
 
     it("Throws when calling startRound before roundStartTime (including round = 0)", co(function *() {
-        let latestBlock = web3.eth.getBlock("latest");
-        let simulatedTimeNow = latestBlock.timestamp;
-        let DayFromNow = simulatedTimeNow + 86400 + 10;
-
-        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield createROSCA();
 
         for (let i = 0 ; i < MEMBER_COUNT + 1; i++) {
-            yield rosca.startRound().then(function () {
-                assert.isNotOk(true, "expected calling startRound before roundStartTime to throw");
-            }).catch(function (e) {
-                assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
-            });
+            yield utils.assertThrows(rosca.startRound(), "expected calling startRound before roundStartTime to throw");
 
             yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
-            web3.currentProvider.send({
-                jsonrpc: "2.0",
-                method: "evm_increaseTime",
-                params: [ROUND_PERIOD_DELAY],
-                id: new Date().getTime()
-            });
+            utils.increaseTime(MIN_START_DELAY);
             yield rosca.startRound();
         }
+
         // checks if endOfROSCA has been set to true by calling contribute which should throw
-        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}).then(function() {
-            assert.isNotOk(true, "Calling contribute after ROSCA ended was expected to throw");
-        }).catch(function(e) {
-            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
-        });
+        yield utils.assertThrows(rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}), "Calling contribute after ROSCA ended was expected to throw");
     }));
 });
