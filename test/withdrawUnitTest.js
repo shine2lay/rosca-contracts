@@ -1,6 +1,8 @@
-let Promise = require("bluebird");
+"use strict";
+
 let co = require("co").wrap;
-let assert = require("chai").assert;
+let assert = require('chai').assert;
+let utils = require("./utils/utils.js");
 
 contract('ROSCA withdraw Unit Test', function(accounts) {
     const MIN_START_DELAY = 86400 + 60;
@@ -14,11 +16,11 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     const SERVICE_FEE = 20;
 
     it("Throws when calling withdraw from a non-member", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
 
         yield Promise.all([
             rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}),
@@ -39,17 +41,17 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("Watches for event LogFundsWithdrawal()", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         const ACTUAL_CONTRIBUTION = CONTRIBUTION_SIZE * 0.8;
 
         yield rosca.contribute({from: accounts[0], value: ACTUAL_CONTRIBUTION});
 
-        var eventFired = false;
-        var fundsWithdrawalEvent = rosca.LogFundsWithdrawal();
+        let eventFired = false;
+        let fundsWithdrawalEvent = rosca.LogFundsWithdrawal();
         fundsWithdrawalEvent.watch(function(error, log) {
             fundsWithdrawalEvent.stopWatching();
             eventFired = true;
@@ -64,11 +66,11 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("Throws when calling withdraw when totalDebit > totalCredit", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
 
         web3.currentProvider.send({
             jsonrpc: "2.0",
@@ -91,11 +93,11 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("generates a LogCannotWithdrawFully when the contract balance is less than what the user is entitled to", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
 
         web3.currentProvider.send({
             jsonrpc: "2.0",
@@ -118,25 +120,25 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         });
         rosca.startRound(); // 2nd Member will be entitled to DEFAULT_POT which is greater than CONTRIBUTION_SIZE
 
-        var withdrewAmount = 0;
-        var credit_before = yield rosca.members.call(accounts[2]);
-        var withdrawalEvent = rosca.LogCannotWithdrawFully();
+        let withdrewAmount = 0;
+        let credit_before = yield rosca.members.call(accounts[2]);
+        let withdrawalEvent = rosca.LogCannotWithdrawFully();
         withdrawalEvent.watch(function(error,log){
             withdrewAmount = log.args.contractBalance;
             withdrawalEvent.stopWatching();
         });
 
         yield rosca.withdraw({from: accounts[2]});
-        var credit_after = yield rosca.members.call(accounts[2]);
+        let credit_after = yield rosca.members.call(accounts[2]);
         assert.equal(credit_after[0], credit_before[0] - withdrewAmount, "partial withdraw didn't work properly");
     }));
 
     it("checks withdraw when the contract balance is more than what the user is entitled to", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
 
         web3.currentProvider.send({
             jsonrpc: "2.0",
@@ -163,18 +165,18 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         rosca.startRound();
 
         yield rosca.withdraw({from: accounts[2]});
-        var credit_after = yield rosca.members.call(accounts[2]);
-        var currentRound = yield rosca.currentRound.call();
+        let credit_after = yield rosca.members.call(accounts[2]);
+        let currentRound = yield rosca.currentRound.call();
 
         assert.equal(credit_after[0], currentRound * CONTRIBUTION_SIZE, "withdraw doesn't send the right amount");
     }));
 
     it("checks withdraw when the contract balance is less than what the user is entitled to while totalDiscount != 0", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         web3.currentProvider.send({
             jsonrpc: "2.0",
             method: "evm_increaseTime",
@@ -199,16 +201,16 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         yield rosca.startRound();
 
-        var withdrewAmount;
-        var credit_before = yield rosca.members.call(accounts[2]);
-        var withdrawalEvent = rosca.LogCannotWithdrawFully();
+        let withdrewAmount;
+        let credit_before = yield rosca.members.call(accounts[2]);
+        let withdrawalEvent = rosca.LogCannotWithdrawFully();
         withdrawalEvent.watch(function(error,log){
             withdrewAmount = log.args.contractBalance;
             withdrawalEvent.stopWatching();
         });
 
         yield rosca.withdraw({from: accounts[2]});
-        var credit_after = yield rosca.members.call(accounts[2]);
+        let credit_after = yield rosca.members.call(accounts[2]);
 
         yield Promise.delay(300);
         return assert.equal(credit_after[0], credit_before[0] - withdrewAmount, "partial withdraw didn't work properly");
@@ -216,11 +218,11 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("checks withdraw when the contract balance is more than what the user is entitled to while totalDiscount != 0", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         const BID_TO_PLACE = DEFAULT_POT * 0.80;
         web3.currentProvider.send({
             jsonrpc: "2.0",
@@ -248,10 +250,10 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield rosca.startRound();
 
         yield rosca.withdraw({from: accounts[2]});
-        var creditAfter = yield rosca.members.call(accounts[2])[0];
-        var currentRound = yield rosca.currentRound.call();
-        var totalDiscount = DEFAULT_POT - BID_TO_PLACE;
-        var expectedCredit = (currentRound * CONTRIBUTION_SIZE) - (totalDiscount / MEMBER_COUNT);
+        let creditAfter = yield rosca.members.call(accounts[2])[0];
+        let currentRound = yield rosca.currentRound.call();
+        let totalDiscount = DEFAULT_POT - BID_TO_PLACE;
+        let expectedCredit = (currentRound * CONTRIBUTION_SIZE) - (totalDiscount / MEMBER_COUNT);
 
         assert.equal(creditAfter, expectedCredit , "withdraw doesn't send the right amount");
     }));

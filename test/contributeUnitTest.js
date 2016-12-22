@@ -1,6 +1,8 @@
-let Promise = require("bluebird");
+"use strict";
+
 let co = require("co").wrap;
-let assert = require("chai").assert;
+let assert = require('chai').assert;
+let utils = require("./utils/utils.js");
 
 contract('ROSCA contribute Unit Test', function(accounts) {
     const ROUND_PERIOD_DELAY = 86400 * 3;
@@ -11,11 +13,11 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     const SERVICE_FEE = 20;
 
     it("Throws when calling contribute from a non-member", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}); // check if valid contribution can be made
         return rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}).then(function() {
             assert.isNotOk(true, "calling contribute from a non-member success");
@@ -25,15 +27,15 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         const ACTUAL_CONTRIBUTION  = CONTRIBUTION_SIZE * 0.1;
 
-        var eventFired = false;
-        var contributionMadeEvent = rosca.LogContributionMade();
+        let eventFired = false;
+        let contributionMadeEvent = rosca.LogContributionMade();
         contributionMadeEvent.watch(function(error,log){
             contributionMadeEvent.stopWatching();
             eventFired = true;
@@ -48,16 +50,16 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("Checks whether the contributed value gets registered properly", co(function *() {
-        var latestBlock = web3.eth.getBlock("latest");
-        var simulatedTimeNow = latestBlock.timestamp;
-        var DayFromNow = simulatedTimeNow + 86400 + 10;
+        let latestBlock = web3.eth.getBlock("latest");
+        let simulatedTimeNow = latestBlock.timestamp;
+        let DayFromNow = simulatedTimeNow + 86400 + 10;
 
-        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+        let rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
         const CONTRIBUTION_CHECK = CONTRIBUTION_SIZE * 1.2;
 
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE * 0.2});
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
-        var credit_after = yield rosca.members.call(accounts[2]);
+        let credit_after = yield rosca.members.call(accounts[2]);
         assert.equal(credit_after[0], CONTRIBUTION_CHECK, "contribution's credit value didn't get registered properly");
     }));
 
