@@ -1,5 +1,6 @@
 "use strict";
 
+let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");

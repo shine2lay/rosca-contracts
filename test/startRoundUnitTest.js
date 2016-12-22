@@ -1,5 +1,6 @@
 "use strict";
 
+let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
@@ -9,11 +10,11 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     const ROSCA_START_TIME_DELAY = 86400 + 60;
     const ROUND_PERIOD_DELAY = 86400 * 3;
     const CONTRIBUTION_SIZE = 1e16;
-    const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
 
     const ROUND_PERIOD_IN_DAYS = 3;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
+    const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
     const SERVICE_FEE = 2;
 
     function createROSCA() {
@@ -53,7 +54,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
 
             yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
-            utils.increaseTime(ROSCA_START_TIME_DELAY);
+            utils.increaseTime(ROUND_PERIOD_DELAY);
             yield rosca.startRound();
         }
 

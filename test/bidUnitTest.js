@@ -1,5 +1,6 @@
 "use strict";
 
+let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
@@ -79,7 +80,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let credit = yield rosca.members.call(accounts[2])[0];
+        let user = yield rosca.members.call(accounts[2]);
+        let credit = user[0];
         let expected_credit = CONTRIBUTION_SIZE + (BID_TO_PLACE * FEE);
 
         assert.equal(credit, expected_credit, "bid placed didn't affect winner's credit");
@@ -117,7 +119,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let credit = yield rosca.members.call(accounts[1])[0];
+        let user = yield rosca.members.call(accounts[1]);
+        let credit = user[0];
         let expected_credit = CONTRIBUTION_SIZE + (DEFAULT_POT * FEE);
 
         assert.notEqual(credit, expected_credit, "new higher bid won");

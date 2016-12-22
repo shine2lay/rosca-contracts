@@ -1,5 +1,6 @@
 "use strict";
 
+let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
@@ -8,11 +9,12 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     const ROSCA_START_TIME_DELAY = 86400 + 60;
     const ROUND_PERIOD_DELAY = 86400 * 3;
     const CONTRIBUTION_SIZE = 1e16;
-    const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
+
 
     const ROUND_PERIOD_IN_DAYS = 3;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
+    const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
     const SERVICE_FEE = 2;
 
     function createROSCA() {
@@ -181,7 +183,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield rosca.startRound();
 
         yield rosca.withdraw({from: accounts[2]});
-        let creditAfter = yield rosca.members.call(accounts[2])[0];
+        let user = yield rosca.members.call(accounts[2]);
+        let creditAfter = user[0];
         let currentRound = yield rosca.currentRound.call();
         let totalDiscount = DEFAULT_POT - BID_TO_PLACE;
         let expectedCredit = (currentRound * CONTRIBUTION_SIZE) - (totalDiscount / MEMBER_COUNT);
