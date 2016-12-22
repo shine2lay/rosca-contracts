@@ -103,6 +103,10 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         yield rosca.withdraw({from: accounts[2]});
         let credit_after = yield rosca.members.call(accounts[2]);
+
+        let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
+        assert.equal(contractCredit, 0); // contract balance should be zero because the withdraw should've withdrawn everything
+
         assert.equal(credit_after[0], credit_before[0] - withdrewAmount, "partial withdraw didn't work properly");
     }));
 
@@ -126,6 +130,9 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield rosca.withdraw({from: accounts[2]});
         let credit_after = yield rosca.members.call(accounts[2]);
         let currentRound = yield rosca.currentRound.call();
+
+        let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
+        assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
 
         assert.equal(credit_after[0], currentRound * CONTRIBUTION_SIZE, "withdraw doesn't send the right amount");
     }));
@@ -159,8 +166,11 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let credit_after = yield rosca.members.call(accounts[2]);
 
         yield Promise.delay(300);
-        assert.equal(credit_after[0], credit_before[0] - withdrewAmount, "partial withdraw didn't work properly");
 
+        let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
+        assert.equal(contractCredit, 0); // contract balance should be zero because the withdraw should've withdrawn everything
+
+        assert.equal(credit_after[0], credit_before[0] - withdrewAmount, "partial withdraw didn't work properly");
     }));
 
     it("checks withdraw when the contract balance is more than what the user is entitled to while totalDiscount != 0", co(function *() {
@@ -188,6 +198,9 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let currentRound = yield rosca.currentRound.call();
         let totalDiscount = DEFAULT_POT - BID_TO_PLACE;
         let expectedCredit = (currentRound * CONTRIBUTION_SIZE) - (totalDiscount / MEMBER_COUNT);
+
+        let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
+        assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
 
         assert.equal(creditAfter, expectedCredit , "withdraw doesn't send the right amount");
     }));
