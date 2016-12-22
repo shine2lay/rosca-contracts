@@ -5,6 +5,7 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
 contract('ROSCA contribute Unit Test', function(accounts) {
+    const ROSCA_START_TIME_DELAY = 86400 + 20;
     const ROUND_PERIOD_DELAY = 86400 * 3;
     const CONTRIBUTION_SIZE = 1e16;
 

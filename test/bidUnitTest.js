@@ -5,7 +5,7 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
 contract('ROSCA bid Unit Test', function(accounts) {
-    const MIN_START_DELAY = 86400 + 60;
+    const ROSCA_START_TIME_DELAY = 86400 + 60;
     const ROUND_PERIOD_DELAY = 86400 * 3;
     const MEMBER_COUNT = 4;
     const CONTRIBUTION_SIZE = 1e16;
@@ -35,7 +35,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("Throws when calling bid without being in good Standing", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield rosca.startRound();
 
         yield utils.assertThrows(rosca.bid(DEFAULT_POT , {from: accounts[1]}), "expected calling bid before contributing to throw");
@@ -44,7 +44,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("Throws Placing bid less than 65% of the Pot", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield rosca.startRound();
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
@@ -56,7 +56,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("generates a LogNewLowestBid event when placing a valid new bid", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield rosca.startRound();
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
@@ -88,7 +88,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("Throws when placing a valid bid from paid member", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
@@ -106,7 +106,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         const BID_PERCENT = 0.95;
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[3], value: CONTRIBUTION_SIZE}),

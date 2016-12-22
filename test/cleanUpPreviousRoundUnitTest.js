@@ -5,7 +5,7 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
 contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
-    const MIN_START_DELAY = 86400 + 20;
+    const ROSCA_START_TIME_DELAY = 86400 + 20;
     const MEMBER_COUNT = 4;
     const CONTRIBUTION_SIZE = 1e16;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
@@ -30,7 +30,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         const BID_PERCENT = 0.75;
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(), // needed to set lowestBid value + winnerAddress to 0
             rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}),
@@ -48,7 +48,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         const BID_TO_PLACE = DEFAULT_POT * 0.68;
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE}),
@@ -78,7 +78,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}), // member 0 will be eligible to win the pot if no bid was placed

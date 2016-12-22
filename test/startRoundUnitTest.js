@@ -6,7 +6,7 @@ let utils = require("./utils/utils.js");
 
 
 contract('ROSCA startRound Unit Test', function(accounts) {
-    const MIN_START_DELAY = 86400 + 60;
+    const ROSCA_START_TIME_DELAY = 86400 + 60;
     const ROUND_PERIOD_DELAY = 86400 * 3;
     const CONTRIBUTION_SIZE = 1e16;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
@@ -37,7 +37,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
             assert.equal(log.args.currentRound, 1, "Log didnt show currentRound properly");
         });
 
-        utils.increaseTime(MIN_START_DELAY);
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield rosca.startRound();
 
         yield Promise.delay(300);
@@ -53,7 +53,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
 
             yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
-            utils.increaseTime(MIN_START_DELAY);
+            utils.increaseTime(ROSCA_START_TIME_DELAY);
             yield rosca.startRound();
         }
 
