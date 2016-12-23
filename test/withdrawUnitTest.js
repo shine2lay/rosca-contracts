@@ -94,20 +94,28 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         rosca.startRound(); // 2nd Member will be entitled to DEFAULT_POT which is greater than CONTRIBUTION_SIZE
 
         let withdrewAmount = 0;
-        let credit_before = yield rosca.members.call(accounts[2]);
+        let member_before = yield rosca.members.call(accounts[2]);
+        let credit_before = member_before[0];
+
         let withdrawalEvent = rosca.LogCannotWithdrawFully();
         withdrawalEvent.watch(function(error,log){
             withdrewAmount = log.args.contractBalance;
             withdrawalEvent.stopWatching();
         });
+        let memberBalanceBefore = web3.eth.getBalance(accounts[2]).toNumber();
 
         yield rosca.withdraw({from: accounts[2]});
-        let credit_after = yield rosca.members.call(accounts[2]);
+
+        let member_after = yield rosca.members.call(accounts[2]);
+        let credit_after = member_after[0];
+
+        let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
 
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
         assert.equal(contractCredit, 0); // contract balance should be zero because the withdraw should've withdrawn everything
 
-        assert.equal(credit_after[0], credit_before[0] - withdrewAmount, "partial withdraw didn't work properly");
+        assert.isAbove(memberBalanceAfter, memberBalanceBefore);
+        assert.equal(credit_after, credit_before - withdrewAmount, "partial withdraw didn't work properly");
     }));
 
     it("checks withdraw when the contract balance is more than what the user is entitled to", co(function *() {
@@ -126,15 +134,22 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         utils.increaseTime(ROUND_PERIOD_DELAY);
         rosca.startRound();
+        let memberBalanceBefore = web3.eth.getBalance(accounts[2]).toNumber();
 
         yield rosca.withdraw({from: accounts[2]});
-        let credit_after = yield rosca.members.call(accounts[2]);
+
+        let member_after = yield rosca.members.call(accounts[2]);
+        let credit_after = member_after[0];
+
         let currentRound = yield rosca.currentRound.call();
+
+        let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
 
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
         assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
 
-        assert.equal(credit_after[0], currentRound * CONTRIBUTION_SIZE, "withdraw doesn't send the right amount");
+        assert.isAbove(memberBalanceAfter, memberBalanceBefore);
+        assert.equal(credit_after, currentRound * CONTRIBUTION_SIZE, "withdraw doesn't send the right amount");
     }));
 
     it("checks withdraw when the contract balance is less than what the user is entitled to while totalDiscount != 0", co(function *() {
@@ -155,22 +170,29 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield rosca.startRound();
 
         let withdrewAmount;
-        let credit_before = yield rosca.members.call(accounts[2]);
+        let member_before = yield rosca.members.call(accounts[2]);
+        let credit_before = member_before[0];
+
         let withdrawalEvent = rosca.LogCannotWithdrawFully();
         withdrawalEvent.watch(function(error,log){
             withdrewAmount = log.args.contractBalance;
             withdrawalEvent.stopWatching();
         });
+        let memberBalanceBefore = web3.eth.getBalance(accounts[2]).toNumber();
 
         yield rosca.withdraw({from: accounts[2]});
-        let credit_after = yield rosca.members.call(accounts[2]);
+
+        let member_after = yield rosca.members.call(accounts[2]);
+        let credit_after = member_after[0];
 
         yield Promise.delay(300);
+        let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
 
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
         assert.equal(contractCredit, 0); // contract balance should be zero because the withdraw should've withdrawn everything
 
-        assert.equal(credit_after[0], credit_before[0] - withdrewAmount, "partial withdraw didn't work properly");
+        assert.isAbove(memberBalanceAfter, memberBalanceBefore);
+        assert.equal(credit_after, credit_before[0] - withdrewAmount, "partial withdraw didn't work properly");
     }));
 
     it("checks withdraw when the contract balance is more than what the user is entitled to while totalDiscount != 0", co(function *() {
@@ -192,15 +214,21 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         yield rosca.startRound();
 
+        let memberBalanceBefore = web3.eth.getBalance(accounts[2]).toNumber();
+
         yield rosca.withdraw({from: accounts[2]});
         let user = yield rosca.members.call(accounts[2]);
         let creditAfter = user[0];
+
         let currentRound = yield rosca.currentRound.call();
         let totalDiscount = DEFAULT_POT - BID_TO_PLACE;
+
         let expectedCredit = (currentRound * CONTRIBUTION_SIZE) - (totalDiscount / MEMBER_COUNT);
+        let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
 
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
         assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
+        assert.isAbove(memberBalanceAfter, memberBalanceBefore);
 
         assert.equal(creditAfter, expectedCredit , "withdraw doesn't send the right amount");
     }));
