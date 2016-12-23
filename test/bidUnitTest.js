@@ -17,6 +17,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
     const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
+    const FEE = (1 - SERVICE_FEE/1000);
 
     function createROSCA() {
         utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
@@ -38,7 +39,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("Throws when calling bid without being in good Standing", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(ROSCA_START_TIME_DELAY);
+        utils.increaseTime(START_TIME_DELAY);
         yield rosca.startRound();
 
         yield utils.assertThrows(rosca.bid(DEFAULT_POT , {from: accounts[1]}),
@@ -50,7 +51,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         const MIN_DISTRIBUTION_PERCENT = yield rosca.MIN_DISTRIBUTION_PERCENT.call();
 
-        utils.increaseTime(ROSCA_START_TIME_DELAY);
+        utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE})
@@ -65,7 +66,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         const BID_TO_PLACE = DEFAULT_POT * 0.94;
 
-        utils.increaseTime(ROSCA_START_TIME_DELAY);
+        utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE})
@@ -90,15 +91,15 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         let member = yield rosca.members.call(accounts[2]);
         let credit = member[0];
-        let expected_credit = CONTRIBUTION_SIZE + (BID_TO_PLACE * FEE);
+        let expectedCredit = CONTRIBUTION_SIZE + (BID_TO_PLACE * FEE);
 
-        assert.equal(credit, expected_credit, "bid placed didn't affect winner's credit");
+        assert.equal(credit, expectedCredit, "bid placed didn't affect winner's credit");
     }));
 
     it("Throws when placing a valid bid from paid member", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(ROSCA_START_TIME_DELAY);
+        utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
@@ -117,7 +118,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         const BID_PERCENT = 0.95;
 
-        utils.increaseTime(ROSCA_START_TIME_DELAY);
+        utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
             rosca.contribute({from: accounts[3], value: CONTRIBUTION_SIZE}),
@@ -131,8 +132,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         let member = yield rosca.members.call(accounts[1]);
         let credit = member[0];
-        let expected_credit = CONTRIBUTION_SIZE + (DEFAULT_POT * FEE);
+        let expectedCredit = CONTRIBUTION_SIZE + (DEFAULT_POT * FEE);
 
-        assert.notEqual(credit, expected_credit, "new higher bid won"); // check notEqual
+        assert.notEqual(credit, expectedCredit, "new higher bid won"); // check notEqual
     }));
 });

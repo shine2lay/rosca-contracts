@@ -65,9 +65,10 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE})
         ]);
 
-        let credit_after = yield rosca.members.call(accounts[2]);
+        let member = yield rosca.members.call(accounts[2]);
+        let creditAfter = member[0];
 
-        assert.equal(credit_after[0], CONTRIBUTION_CHECK, "contribution's credit value didn't get registered properly");
+        assert.equal(creditAfter, CONTRIBUTION_CHECK, "contribution's credit value didn't get registered properly");
     }));
 
 });

@@ -24,12 +24,12 @@ contract('ROSCA addMember Unit Test', function(accounts) {
             SERVICE_FEE);
     }
 
-    it("throws when adding an existing member", function () {
+    it("throws when adding an existing member", co(function *() {
         let rosca = yield createROSCA();
 
         yield utils.assertThrows(rosca.addMember(accounts[1]),
             "adding existing member succeed when it should have thrown");
-    });
+    }));
 
     it("checks member get added properly", co(function *() {
         let rosca = yield createROSCA();
