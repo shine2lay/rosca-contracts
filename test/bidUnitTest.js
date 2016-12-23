@@ -6,24 +6,25 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
 contract('ROSCA bid Unit Test', function(accounts) {
-    const ROSCA_START_TIME_DELAY = 86400 + 60;
-    const ROUND_PERIOD_DELAY = 86400 * 3;
-    const MEMBER_COUNT = 4;
-    const CONTRIBUTION_SIZE = 1e16;
-    const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-    const FEE = 1 - 0.002;
-
+    //Parameters for new ROSCA creation
     const ROUND_PERIOD_IN_DAYS = 3;
+    const MIN_TIME_BEFORE_START_IN_DAYS = 1;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
+    const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE = 2;
 
+    const MEMBER_COUNT = MEMBER_LIST.length + 1;
+    const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
+    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds is added as a buffer to prevent failed ROSCA creation
+    const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
+
     function createROSCA() {
-        utils.mine();
+        utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
         return ROSCATest.new(
-            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + ROSCA_START_TIME_DELAY, MEMBER_LIST,
+            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
             SERVICE_FEE);
     }
 
@@ -45,26 +46,31 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("Throws Placing bid less than 65% of the Pot", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(ROSCA_START_TIME_DELAY);
-        yield rosca.startRound();
-        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
-
         const MIN_DISTRIBUTION_PERCENT = yield rosca.MIN_DISTRIBUTION_PERCENT.call();
 
-        yield utils.assertThrows(rosca.bid(DEFAULT_POT * (MIN_DISTRIBUTION_PERCENT / 100 * 0.99), {from: accounts[2]}), "expected placing bid less than MIN_DISTRIBUTION_PERCENT threshold to throw");
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
+        yield Promise.all([
+            rosca.startRound(),
+            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE})
+        ]);
+
+        yield utils.assertThrows(rosca.bid(DEFAULT_POT * (MIN_DISTRIBUTION_PERCENT / 100 * 0.99), {from: accounts[2]}),
+            "expected placing bid less than MIN_DISTRIBUTION_PERCENT threshold to throw");
     }));
 
     it("generates a LogNewLowestBid event when placing a valid new bid", co(function *() {
         let rosca = yield createROSCA();
 
-        utils.increaseTime(ROSCA_START_TIME_DELAY);
-        yield rosca.startRound();
-        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
-
         const BID_TO_PLACE = DEFAULT_POT * 0.94;
 
-        let bidEvent = rosca.LogNewLowestBid();
+        utils.increaseTime(ROSCA_START_TIME_DELAY);
+        yield Promise.all([
+            rosca.startRound(),
+            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE})
+        ]);
+
         let eventFired = false;
+        let bidEvent = rosca.LogNewLowestBid();
         bidEvent.watch(function(error, log) {
             bidEvent.stopWatching();
             eventFired = true;
@@ -80,8 +86,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let user = yield rosca.members.call(accounts[2]);
-        let credit = user[0];
+        let member = yield rosca.members.call(accounts[2]);
+        let credit = member[0];
         let expected_credit = CONTRIBUTION_SIZE + (BID_TO_PLACE * FEE);
 
         assert.equal(credit, expected_credit, "bid placed didn't affect winner's credit");
@@ -116,13 +122,14 @@ contract('ROSCA bid Unit Test', function(accounts) {
             rosca.bid(DEFAULT_POT * BID_PERCENT, {from: accounts[3]}),
             rosca.bid(DEFAULT_POT , {from: accounts[1]})
         ]);
+
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let user = yield rosca.members.call(accounts[1]);
-        let credit = user[0];
+        let member = yield rosca.members.call(accounts[1]);
+        let credit = member[0];
         let expected_credit = CONTRIBUTION_SIZE + (DEFAULT_POT * FEE);
 
-        assert.notEqual(credit, expected_credit, "new higher bid won");
+        assert.notEqual(credit, expected_credit, "new higher bid won"); // check notEqual
     }));
 });
