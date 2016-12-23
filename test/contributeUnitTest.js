@@ -13,7 +13,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE = 2;
 
-    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds is added as a buffer to prevent failed ROSCA creation
+    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
 
     function createROSCA() {
         utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
@@ -27,10 +27,11 @@ contract('ROSCA contribute Unit Test', function(accounts) {
 
     it("Throws when calling contribute from a non-member", co(function *() {
         let rosca = yield createROSCA();
+        // check if valid contribution can be made
+        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
-        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}); // check if valid contribution can be made
-
-        yield utils.assertThrows(rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}), "calling contribute from a non-member success");
+        yield utils.assertThrows(rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}),
+            "calling contribute from a non-member success");
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function *() {
@@ -44,7 +45,8 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             contributionMadeEvent.stopWatching();
             eventFired = true;
             assert.equal(log.args.user, accounts[1], "LogContributionMade doesn't display proper user value");
-            assert.equal(log.args.amount, ACTUAL_CONTRIBUTION, "LogContributionMade doesn't display proper amount value");
+            assert.equal(log.args.amount, ACTUAL_CONTRIBUTION,
+                "LogContributionMade doesn't display proper amount value");
         });
 
         yield rosca.contribute({from: accounts[1], value: ACTUAL_CONTRIBUTION});

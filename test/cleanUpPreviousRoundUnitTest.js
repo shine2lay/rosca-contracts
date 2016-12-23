@@ -15,7 +15,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds is added as a buffer to prevent failed ROSCA creation
+    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
+    const FEE = (1 - SERVICE_FEE/1000);
 
     function createROSCA() {
         utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
@@ -66,7 +67,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             assert.equal(accounts[1], log.args.winnerAddress);
             assert.isOk(user[2], "chosen address is not a member"); // user.alive
             assert.isOk(user[1], "Paid member was chosen"); // user.paid
-            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + BID_TO_PLACE * FEE, "winningBid is not Default_POT"); // user.credit
+            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + BID_TO_PLACE * FEE,
+                "winningBid is not Default_POT"); // user.credit
         }));
 
         yield rosca.cleanUpPreviousRound();
@@ -81,8 +83,10 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
-            rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}), // member 0 will be eligible to win the pot if no bid was placed
-            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}), // member 2 will be eligible to win the pot if no bid was placed
+            // member 0 will be eligible to win the pot if no bid was placed
+            rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}),
+            // member 2 will be eligible to win the pot if no bid was placed
+            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
         ]);
 
         let winner;
@@ -103,7 +107,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         yield Promise.delay(300);
         assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
-        assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT * FEE, "lowestBid is not deposited into winner's credit"); // winner.credit
+        assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT * FEE,
+            "lowestBid is not deposited into winner's credit"); // winner.credit
         assert.isOk(winner[2], "a non member was chosen when there were no bids");
     }));
 });

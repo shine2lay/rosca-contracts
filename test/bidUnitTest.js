@@ -15,7 +15,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds is added as a buffer to prevent failed ROSCA creation
+    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
     function createROSCA() {
@@ -31,7 +31,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("Throws when calling Bid with valid parameters before ROSCA starts", co(function *() {
         let rosca = yield createROSCA();
 
-        yield utils.assertThrows(rosca.bid(DEFAULT_POT, {from: accounts[1]}), "expected calling bid in round 0 to throw");
+        yield utils.assertThrows(rosca.bid(DEFAULT_POT, {from: accounts[1]}),
+            "expected calling bid in round 0 to throw");
     }));
 
     it("Throws when calling bid without being in good Standing", co(function *() {
@@ -40,7 +41,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROSCA_START_TIME_DELAY);
         yield rosca.startRound();
 
-        yield utils.assertThrows(rosca.bid(DEFAULT_POT , {from: accounts[1]}), "expected calling bid before contributing to throw");
+        yield utils.assertThrows(rosca.bid(DEFAULT_POT , {from: accounts[1]}),
+            "expected calling bid before contributing to throw");
     }));
 
     it("Throws Placing bid less than 65% of the Pot", co(function *() {
@@ -106,7 +108,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        yield utils.assertThrows(rosca.bid(DEFAULT_POT, {from: accounts[2]}), "calling bid from paid member succeed, didn't throw");
+        yield utils.assertThrows(rosca.bid(DEFAULT_POT, {from: accounts[2]}),
+            "calling bid from paid member succeed, didn't throw");
     }));
 
     it("new Higher bid is ignored" , co(function *() {

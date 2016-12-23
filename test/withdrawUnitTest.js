@@ -15,7 +15,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds is added as a buffer to prevent failed ROSCA creation
+    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
     function createROSCA() {
@@ -42,7 +42,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             rosca.withdraw({from: accounts[3]})
         ]);
 
-        yield utils.assertThrows(rosca.withdraw({from: accounts[4]}), "expected calling withdraw from a non-member to throw");
+        yield utils.assertThrows(rosca.withdraw({from: accounts[4]}),
+            "expected calling withdraw from a non-member to throw");
     }));
 
     it("Watches for event LogFundsWithdrawal()", co(function *() {
@@ -58,7 +59,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             fundsWithdrawalEvent.stopWatching();
             eventFired = true;
             assert.equal(log.args.user, accounts[0], "LogContributionMade doesn't display proper user value");
-            assert.equal(log.args.amount, ACTUAL_CONTRIBUTION, "LogContributionMade doesn't display proper amount value");
+            assert.equal(log.args.amount, ACTUAL_CONTRIBUTION,
+                "LogContributionMade doesn't display proper amount value");
         });
 
         yield rosca.withdraw({from: accounts[0]});
@@ -76,10 +78,11 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE * 0.8})
         ]);
 
-        yield utils.assertThrows(rosca.withdraw({from: accounts[2]}), "expected calling withdraw when totalDebit is greater than totalCredit to throw");
+        yield utils.assertThrows(rosca.withdraw({from: accounts[2]}),
+            "expected calling withdraw when totalDebit is greater than totalCredit to throw");
     }));
 
-    it("generates a LogCannotWithdrawFully when the contract balance is less than what the user is entitled to", co(function *() {
+    it("fire LogCannotWithdrawFully when contract balance is less than what the user is entitled to", co(function *() {
         let rosca = yield createROSCA();
 
         utils.increaseTime(START_TIME_DELAY);
@@ -115,7 +118,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
 
-        assert.equal(contractCredit, 0); // contract balance should be zero because the withdraw should've withdrawn everything
+        // contract balance should be zero because the withdraw should've withdrawn everything
+        assert.equal(contractCredit, 0);
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
         assert.equal(creditAfter, creditBefore - withdrewAmount, "partial withdraw didn't work properly");
     }));
@@ -151,7 +155,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         assert.equal(creditAfter, currentRound * CONTRIBUTION_SIZE, "withdraw doesn't send the right amount");
     }));
 
-    it("checks withdraw when the contract balance is less than what the user is entitled to while totalDiscount != 0", co(function *() {
+    it("withdraw when the contract balance is less than what the user is entitled to while totalDiscount != 0", co(function *() {
         let rosca = yield createROSCA();
 
         utils.increaseTime(START_TIME_DELAY);
@@ -159,7 +163,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             rosca.startRound(),
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
             rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[3], value: CONTRIBUTION_SIZE * 0.3}), // to make sure contract's balance is less than winning bid
+            // to make sure contract's balance is less than winning bid
+            rosca.contribute({from: accounts[3], value: CONTRIBUTION_SIZE * 0.3}),
             rosca.bid(DEFAULT_POT * 0.80, {from: accounts[2]})
         ]);
 
@@ -189,12 +194,13 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
 
-        assert.equal(contractCredit, 0); // contract balance should be zero because the withdraw should've withdrawn everything
+        // contract balance should be zero because the withdraw should've withdrawn everything
+        assert.equal(contractCredit, 0);
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
         assert.equal(creditAfter, creditBefore - withdrewAmount, "partial withdraw didn't work properly");
     }));
 
-    it("checks withdraw when the contract balance is more than what the user is entitled to while totalDiscount != 0", co(function *() {
+    it("withdraw when the contract balance is more than what the user is entitled to while totalDiscount != 0", co(function *() {
         let rosca = yield createROSCA();
 
         const BID_TO_PLACE = DEFAULT_POT * 0.80;

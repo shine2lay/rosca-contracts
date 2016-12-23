@@ -14,7 +14,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     const SERVICE_FEE = 2;
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
-    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds is added as a buffer to prevent failed ROSCA creation
+    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
     function createROSCA() {
@@ -58,6 +58,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         }
 
         // checks if endOfROSCA has been set to true by calling contribute which should throw
-        yield utils.assertThrows(rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}), "Calling contribute after ROSCA ended was expected to throw");
+        yield utils.assertThrows(rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
+            "Calling contribute after ROSCA ended was expected to throw");
     }));
 });
