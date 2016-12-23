@@ -12,14 +12,6 @@ module.exports = {
     });
   },
 
-  mine: function () {
-    web3.currentProvider.send({
-      jsonrpc: "2.0",
-      method: "evm_mine",
-      id: new Date().getTime()
-    });
-  },
-
   assertThrows: function(promise, err) {
     return promise.then(function() {
       assert.isNotOk(true, err);
