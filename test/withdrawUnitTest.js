@@ -155,7 +155,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         assert.equal(creditAfter, currentRound * CONTRIBUTION_SIZE, "withdraw doesn't send the right amount");
     }));
 
-    it("withdraw when the contract balance is less than what the user is entitled to while totalDiscount != 0", co(function *() {
+    it("withdraw when contract can't send than what the user is entitled while totalDiscount != 0", co(function *() {
         let rosca = yield createROSCA();
 
         utils.increaseTime(START_TIME_DELAY);
@@ -200,7 +200,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         assert.equal(creditAfter, creditBefore - withdrewAmount, "partial withdraw didn't work properly");
     }));
 
-    it("withdraw when the contract balance is more than what the user is entitled to while totalDiscount != 0", co(function *() {
+    it("withdraw when the contract can send what the user is entitled to while totalDiscount != 0", co(function *() {
         let rosca = yield createROSCA();
 
         const BID_TO_PLACE = DEFAULT_POT * 0.80;
