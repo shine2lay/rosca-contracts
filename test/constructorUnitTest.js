@@ -5,14 +5,14 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
 contract('ROSCA constructor Unit Test', function(accounts) {
-    //Parameters for new ROSCA creation
+    // Parameters for new ROSCA creation
     const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_TIME_BEFORE_START_IN_DAYS = 1;
+    const MIN_DAYS_BEFORE_START = 1;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
-    const SERVICE_FEE = 2;
+    const SERVICE_FEE_IN_THOUSANDTHS = 2;
 
-    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
+    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
 
     it("Throws if ROUND_PERIOD_IN_DAYS < MIN_ROUND_PERIOD_IN_DAYS", co(function *() {
         utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
@@ -24,7 +24,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         const MIN_ROUND_PERIOD = yield deployed.MIN_ROUND_PERIOD_IN_DAYS.call();
         yield utils.assertThrows(ROSCATest.new(
             MIN_ROUND_PERIOD.sub(1), CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE), "contract creation successful");
+            SERVICE_FEE_IN_THOUSANDTHS), "contract creation successful");
     }));
 
     it("Throws if ROUND_PERIOD_IN_DAYS >= MAX_ROUND_PERIOD_IN DAYS", co(function *() {
@@ -38,7 +38,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
 
         yield utils.assertThrows(ROSCATest.new(
             MAX_ROUND_PERIOD.add(1), CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE), "contract creation successful");
+            SERVICE_FEE_IN_THOUSANDTHS), "contract creation successful");
     }));
 
     it("Throws if CONTRIBUTION_SIZE < MIN_CONTRIBUTION_SIZE", co(function *() {
@@ -52,7 +52,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
 
         yield utils.assertThrows(ROSCATest.new(
             ROUND_PERIOD_IN_DAYS, MIN_CONTRIBUTION_SIZE.sub(1), blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE), "contract creation successful");
+            SERVICE_FEE_IN_THOUSANDTHS), "contract creation successful");
     }));
 
     it("Throws if CONTRIBUTION_SIZE > MAX_CONTRIBUTION_SIZE", co(function *() {
@@ -66,7 +66,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
 
         yield utils.assertThrows(ROSCATest.new(
             ROUND_PERIOD_IN_DAYS, MAX_CONTRIBUTION_SIZE.add(1), blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE), "contract creation successful");
+            SERVICE_FEE_IN_THOUSANDTHS), "contract creation successful");
     }));
 
     it("Throws if MINIMUM_TIME_BEFORE_ROSCA_START < 1 day", co(function *() {
@@ -80,7 +80,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
 
         yield utils.assertThrows(ROSCATest.new(
             ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MINIMUM_TIME_BEFORE_ROSCA_START - 1, MEMBER_LIST,
-            SERVICE_FEE), "contract creation successful");
+            SERVICE_FEE_IN_THOUSANDTHS), "contract creation successful");
     }));
 
     it("Throws if feeInThousandths > MAX_FEE_IN_THOUSANTHS" , co(function *() {
@@ -105,7 +105,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
 
         let rosca = yield ROSCATest.new(
             ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE);
+            SERVICE_FEE_IN_THOUSANDTHS);
 
         if (!rosca) {
             assert.isNotOk(true, "rosca with valid parameter is not working");

@@ -6,17 +6,17 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
 contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
-    //Parameters for new ROSCA creation
+    // Parameters for new ROSCA creation
     const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_TIME_BEFORE_START_IN_DAYS = 1;
+    const MIN_DAYS_BEFORE_START= 1;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
-    const SERVICE_FEE = 2;
+    const SERVICE_FEE_IN_THOUSANDTHS = 2;
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
-    const FEE = (1 - SERVICE_FEE/1000);
+    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START+ 10; // 10 seconds buffer
+    const PERCENT_AFTER_FEE = (1 - SERVICE_FEE_IN_THOUSANDTHS / 1000);
 
     function createROSCA() {
         utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
@@ -25,25 +25,25 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         let blockTime = latestBlock.timestamp;
         return ROSCATest.new(
             ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE);
+            SERVICE_FEE_IN_THOUSANDTHS);
     }
 
-    it("checks if totalDiscount is added when lowestBid < DEFAULT_POT", co(function *() {
+    it("checks if totalDiscount igrows when lowestBid < DEFAULT_POT", co(function *() {
         let rosca = yield createROSCA();
 
-        const BID_TO_PLACE = 0.75;
+        const BID_TO_PLACE = DEFAULT_POT * 0.75;
 
         utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(), // needed to set lowestBid value + winnerAddress to 0
             rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}),
-            rosca.bid(DEFAULT_POT * BID_TO_PLACE, {from: accounts[0]}),
+            rosca.bid(BID_TO_PLACE, {from: accounts[0]}),
             rosca.cleanUpPreviousRound()
         ]);
 
         let discount = yield rosca.totalDiscounts.call();
 
-        assert.equal(discount, DEFAULT_POT * (1 - BID_TO_PLACE), "toalDiscount value didn't get added properly");
+        assert.equal(discount, DEFAULT_POT - BID_TO_PLACE, "toalDiscount value didn't get added properly");
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function *() {
@@ -67,7 +67,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             assert.equal(accounts[1], log.args.winnerAddress);
             assert.isOk(user[2], "chosen address is not a member"); // user.alive
             assert.isOk(user[1], "Paid member was chosen"); // user.paid
-            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + BID_TO_PLACE * FEE,
+            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + BID_TO_PLACE * PERCENT_AFTER_FEE,
                 "winningBid is not Default_POT"); // user.credit
         }));
 
@@ -107,7 +107,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         yield Promise.delay(300);
         assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
-        assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT * FEE,
+        assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT * PERCENT_AFTER_FEE,
             "lowestBid is not deposited into winner's credit"); // winner.credit
         assert.isOk(winner[2], "a non member was chosen when there were no bids");
     }));

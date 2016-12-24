@@ -6,15 +6,15 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
 contract('ROSCA startRound Unit Test', function(accounts) {
-    //Parameters for new ROSCA creation
+    // Parameters for new ROSCA creation
     const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_TIME_BEFORE_START_IN_DAYS = 1;
+    const MIN_DAYS_BEFORE_START = 1;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
-    const SERVICE_FEE = 2;
+    const SERVICE_FEE_IN_THOUSADNTHS = 2;
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
-    const START_TIME_DELAY = 86400 * MIN_TIME_BEFORE_START_IN_DAYS + 10; // 10 seconds buffer
+    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
     function createROSCA() {
@@ -24,7 +24,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         let blockTime = latestBlock.timestamp;
         return ROSCATest.new(
             ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE);
+            SERVICE_FEE_IN_THOUSADNTHS);
     }
 
     it("watches for LogstartOfRound event", co(function *() {

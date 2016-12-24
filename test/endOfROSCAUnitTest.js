@@ -14,7 +14,7 @@ contract('end of ROSCA unit test', function(accounts) {
     const CONTRIBUTION_SIZE = 1e16;
 
     function createROSCA() {
-      utils.mine();
+      utils.mineOneBlock();
       const SERVICE_FEE_IN_THOUSANDTHS = 2;
       
       let latestBlock = web3.eth.getBlock("latest");
