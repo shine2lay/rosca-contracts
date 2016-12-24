@@ -29,7 +29,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }
 
     it("checks if totalDiscount igrows when lowestBid < DEFAULT_POT", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS,CONTRIBUTION_SIZE,START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const BID_TO_PLACE = DEFAULT_POT * 0.75;
 
@@ -47,7 +48,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS,CONTRIBUTION_SIZE,START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const BID_TO_PLACE = DEFAULT_POT * 0.68;
 
@@ -78,7 +80,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS,CONTRIBUTION_SIZE,START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
