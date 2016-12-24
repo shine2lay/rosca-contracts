@@ -11,7 +11,6 @@ contract('ROSCA constructor Unit Test', function(accounts) {
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
-
     const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
 
     it("Throws if ROUND_PERIOD_IN_DAYS < MIN_ROUND_PERIOD_IN_DAYS", co(function *() {

@@ -17,18 +17,9 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
-    function createROSCA() {
-        utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
-
-        let latestBlock = web3.eth.getBlock("latest");
-        let blockTime = latestBlock.timestamp;
-        return ROSCATest.new(
-            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE_IN_THOUSADNTHS);
-    }
-
     it("watches for LogstartOfRound event", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         let eventFired = false;
         let startOfRoundEvent = rosca.LogStartOfRound();
@@ -46,7 +37,8 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     }));
 
     it("Throws when calling startRound before roundStartTime (including round = 0)", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         for (let i = 0 ; i < MEMBER_COUNT + 1; i++) {
             yield utils.assertThrows(rosca.startRound(), "expected calling startRound before roundStartTime to throw");

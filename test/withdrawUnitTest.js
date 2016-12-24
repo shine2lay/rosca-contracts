@@ -18,18 +18,9 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
-    function createROSCA() {
-        utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
-
-        let latestBlock = web3.eth.getBlock("latest");
-        let blockTime = latestBlock.timestamp;
-        return ROSCATest.new(
-            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE_IN_THOUSANDTHS);
-    }
-
     it("Throws when calling withdraw from a non-member", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         yield Promise.all([
             rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}),
@@ -47,7 +38,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("Watches for event LogFundsWithdrawal()", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const ACTUAL_CONTRIBUTION = CONTRIBUTION_SIZE * 0.8;
 
@@ -70,7 +62,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("Throws when calling withdraw when totalDebit > totalCredit", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
@@ -83,7 +76,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("fires LogCannotWithdrawFully when contract balance is less than what the user is entitled to", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
@@ -125,7 +119,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("checks withdraw when the contract balance is more than what the user is entitled to", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
@@ -156,7 +151,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("withdraw when contract can't send what the user is entitled while totalDiscount != 0", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
         yield Promise.all([
@@ -201,7 +197,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("withdraw when the contract can send what the user is entitled to while totalDiscount != 0", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const BID_TO_PLACE = DEFAULT_POT * 0.80;
 

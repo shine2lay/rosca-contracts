@@ -12,21 +12,11 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
-
     const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
 
-    function createROSCA() {
-        utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
-
-        let latestBlock = web3.eth.getBlock("latest");
-        let blockTime = latestBlock.timestamp;
-        return ROSCATest.new(
-            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE_IN_THOUSANDTHS);
-    }
-
     it("Throws when calling contribute from a non-member", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
         // check if valid contribution can be made
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
@@ -35,7 +25,8 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const ACTUAL_CONTRIBUTION  = CONTRIBUTION_SIZE * 0.1;
 
@@ -56,7 +47,8 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("Checks whether the contributed value gets registered properly", co(function *() {
-        let rosca = yield createROSCA();
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const CONTRIBUTION_CHECK = CONTRIBUTION_SIZE * 1.2;
 
