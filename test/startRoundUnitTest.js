@@ -11,7 +11,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     const MIN_DAYS_BEFORE_START = 1;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
-    const SERVICE_FEE_IN_THOUSADNTHS = 2;
+    const SERVICE_FEE_IN_THOUSANDTHS = 2;
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer

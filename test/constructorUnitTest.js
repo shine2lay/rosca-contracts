@@ -78,7 +78,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let MINIMUM_TIME_BEFORE_ROSCA_START = yield deployed.MINIMUM_TIME_BEFORE_ROSCA_START.call();
 
         yield utils.assertThrows(ROSCATest.new(
-            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MINIMUM_TIME_BEFORE_ROSCA_START - 1, MEMBER_LIST,
+            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, MINIMUM_TIME_BEFORE_ROSCA_START - 1, MEMBER_LIST,
             SERVICE_FEE_IN_THOUSANDTHS), "contract creation successful");
     }));
 

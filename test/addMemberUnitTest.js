@@ -33,8 +33,7 @@ contract('ROSCA addMember Unit Test', function(accounts) {
         yield rosca.addMember(accounts[4]);
         yield rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE});
 
-        let member = yield rosca.members.call(accounts[4]);
-        let credit = member[0];
+        let credit = (yield rosca.members.call(accounts[4]))[0];
 
         assert.equal(credit, CONTRIBUTION_SIZE, "newly added member couldn't contribute"); // user.credit
     }));
