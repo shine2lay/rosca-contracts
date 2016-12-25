@@ -83,8 +83,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let member = yield rosca.members.call(accounts[2]);
-        let credit = member[0];
+        let credit = (yield rosca.members.call(accounts[2]))[0];
         let expectedCredit = CONTRIBUTION_SIZE + (BID_TO_PLACE * PERCENT_AFTER_FEE);
 
         assert.equal(credit, expectedCredit, "bid placed didn't affect winner's credit");
@@ -126,8 +125,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let member = yield rosca.members.call(accounts[1]);
-        let credit = member[0];
+        let credit = (yield rosca.members.call(accounts[1]))[0];
         let expectedCredit = CONTRIBUTION_SIZE + (DEFAULT_POT * PERCENT_AFTER_FEE);
 
         assert.notEqual(credit, expectedCredit, "new higher bid won");

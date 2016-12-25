@@ -90,8 +90,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield rosca.startRound(); // 2nd Member will be entitled to DEFAULT_POT which is greater than CONTRIBUTION_SIZE
 
         let withdrewAmount = 0;
-        let memberBefore = yield rosca.members.call(accounts[2]);
-        let creditBefore = memberBefore[0];
+        let creditBefore = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceBefore = web3.eth.getBalance(accounts[2]).toNumber();
 
         let eventFired = false;
@@ -107,8 +106,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield Promise.delay(300); // 300ms delay to allow the event to fire properly
         assert.isOk(eventFired, "LogCannotWithrawFully event did not fire");
 
-        let memberAfter = yield rosca.members.call(accounts[2]);
-        let creditAfter = memberAfter[0];
+        let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
 
@@ -220,6 +218,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let currentRound = yield rosca.currentRound.call();
         let totalDiscount = DEFAULT_POT - BID_TO_PLACE;
         let expectedCredit = (currentRound * CONTRIBUTION_SIZE) - (totalDiscount / MEMBER_COUNT);
+
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
 
