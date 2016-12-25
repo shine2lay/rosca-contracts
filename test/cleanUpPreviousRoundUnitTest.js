@@ -18,7 +18,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START+ 10; // 10 seconds buffer
     const PERCENT_AFTER_FEE = (1 - SERVICE_FEE_IN_THOUSANDTHS / 1000);
 
-    it("checks if totalDiscount igrows when lowestBid < DEFAULT_POT", co(function *() {
+    it("checks if totalDiscount grows when lowestBid < DEFAULT_POT", co(function *() {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 

@@ -130,6 +130,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
         let credit = member[0];
         let expectedCredit = CONTRIBUTION_SIZE + (DEFAULT_POT * PERCENT_AFTER_FEE);
 
-        assert.notEqual(credit, expectedCredit, "new higher bid won"); // check notEqual
+        assert.notEqual(credit, expectedCredit, "new higher bid won");
     }));
 });
