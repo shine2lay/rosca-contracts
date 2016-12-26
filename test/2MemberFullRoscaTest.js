@@ -112,7 +112,6 @@ contract('Full 2 Member ROSCA Test', function(accounts_) {
 
         yield startRound();
 
-        // ********* CEHCKING VARIAVLE ***********
         let contract = yield getContractStatus();
 
         // Note that all credits are actually CONTRIBUTION_SIZE more than participants can
@@ -131,7 +130,7 @@ contract('Full 2 Member ROSCA Test', function(accounts_) {
         assert.isNotOk(yield rosca.endOfROSCA.call());
     }));
 
-    it("2nd round: p2, who has won previous round, and p3, who has not won yet, do not contribute", co(function*() {
+    it("2nd round: p0 wins by default", co(function*() {
         // In this round, 1's credit is
         // C + P * 0.90 * NR == C + 2C * 0.90 * 0.99  == 2.782C.
         // This is the 2nd round, so they need the following to hold:
@@ -149,14 +148,14 @@ contract('Full 2 Member ROSCA Test', function(accounts_) {
 
         yield startRound();
 
-        // ********* CEHCKING VARIAVLE ***********
         contract = yield getContractStatus();
 
         // Note that all credits are actually 2C more than participants can draw (neglecting totalDiscounts).
         // Total discounts by now is 0.10P.
-        assert.equal(contract.credits[0], (1.9 + 2 * 0.99) * CONTRIBUTION_SIZE);
-        // winner of this round is p. They win 1.0 * DEFAULT_POT * NR = 1.0 * 2C * 0.99 == 1.98C. Adding to that
+
+        // winner of this round is p0. They win 1.0 * DEFAULT_POT * NR = 1.0 * 2C * 0.99 == 1.98C. Adding to that
         // their existing credit of 2C, they have 3.78C.
+        assert.equal(contract.credits[0], 3.78 * CONTRIBUTION_SIZE);
         assert.equal(contract.credits[1], 1.9 * CONTRIBUTION_SIZE);
         // TD == OLD_TD = 0.2 C
         assertWeiCloseTo(contract.totalDiscounts, 0.2 * CONTRIBUTION_SIZE);
@@ -164,33 +163,29 @@ contract('Full 2 Member ROSCA Test', function(accounts_) {
         // This round started with 2C .
         // Contribution is 0.8C.
         // p1 withdrew 0.873C .
-        // Thus we expect credit to be (2 + 0.8 - 0.873) == 1.927
-        //assert.equal(contract.balance, 1.927 * CONTRIBUTION_SIZE);
+        // Thus we expect credit to be (2 + 0.9 - 0.873) == 2.027.
+        assert.equal(contract.balance, 2.027 * CONTRIBUTION_SIZE);
 
         assert.equal(contract.currentRound, 2); // currentRound value
         assert.isOk(yield rosca.endOfROSCA.call());
     }));
 
-    /*it("post-ROSCA", co(function*() {
+    it("post-ROSCA", co(function*() {
         // totalDebit for everyone after 2 rounds is 2C.
         // totalDiscounts would be 0.2C.
         // Therefore everyone's credit should be 1.8C to be in good standing.
         // Amounts withdrawable:
-        // p0: 3.78C - 1.8C == 1.98C
-        // p1: 1.8C - 1.8C == 0C
+        // p0: 3.78C - 1.9C == 1.88C
+        // p1: 1.8C - 1.9C == 0C
 
         // Let p0 and p1 withdraw.
         let contractBalanceBefore = contractBalance();
         yield withdraw(0);
-        assert.equal(contractBalanceBefore - contractBalance(), 4.06 * CONTRIBUTION_SIZE);
-        assert.equal((yield getContractStatus()).credits[0], 3.85 * CONTRIBUTION_SIZE);
+        assert.equal(contractBalanceBefore - contractBalance(), 1.88 * CONTRIBUTION_SIZE);
+        assert.equal((yield getContractStatus()).credits[0], 1.9 * CONTRIBUTION_SIZE);
 
-        contractBalanceBefore = contractBalance();
-        yield withdraw(1);
-        assert.equal(contractBalanceBefore - contractBalance(), 1 * CONTRIBUTION_SIZE);
-        assert.equal((yield getContractStatus()).credits[1], 3.85 * CONTRIBUTION_SIZE);
-        // Contract would be left with 6.424C (last balance) - (4.06 + 1)C == 1.364C
-        assertWeiCloseTo(contractBalance(), 1.364 * CONTRIBUTION_SIZE);
+        // Contract would be left with 2.027 C (last balance) - (1.88)C == 0.147 C
+        assertWeiCloseTo(contractBalance(), 0.147 * CONTRIBUTION_SIZE);
     }));
 
     it("post-ROSCA collection period", co(function*() {
@@ -201,7 +196,7 @@ contract('Full 2 Member ROSCA Test', function(accounts_) {
         yield rosca.endROSCARetrieveFunds({from: accounts[0]});
         let p0balanceAfter = web3.eth.getBalance(accounts[0]);
         // Accounting for gas, we can't expect the entire funds to be transferred to p0.
-        assert.isAbove(p0balanceAfter - p0balanceBefore, 4 * CONTRIBUTION_SIZE);
-    }));*/
+        assert.isAbove(p0balanceAfter - p0balanceBefore, 0.1 * CONTRIBUTION_SIZE);
+    }));
 
 });
