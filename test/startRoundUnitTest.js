@@ -48,9 +48,6 @@ contract('ROSCA startRound Unit Test', function(accounts) {
             utils.increaseTime(ROUND_PERIOD_DELAY);
             yield rosca.startRound();
         }
-
-        // checks if endOfROSCA has been set to true by calling contribute which should throw
-        yield utils.assertThrows(rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
-            "Calling contribute after ROSCA ended was expected to throw");
+        assert.isOk(yield rosca.endOfROSCA.call());  // Unfortunately, we need to check the internal var directly.
     }));
 });

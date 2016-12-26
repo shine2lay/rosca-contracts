@@ -69,11 +69,9 @@ contract('ROSCA constructor Unit Test', function(accounts) {
     }));
 
     it("Throws if MINIMUM_TIME_BEFORE_ROSCA_START < 1 day", co(function *() {
-        utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
-
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
-
+      
         let deployed = ROSCATest.deployed();
         let MINIMUM_TIME_BEFORE_ROSCA_START = yield deployed.MINIMUM_TIME_BEFORE_ROSCA_START.call();
 

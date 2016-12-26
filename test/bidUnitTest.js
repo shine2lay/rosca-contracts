@@ -124,9 +124,10 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
-
+      
         let credit = (yield rosca.members.call(accounts[1]))[0];
         let expectedCredit = CONTRIBUTION_SIZE + (DEFAULT_POT * PERCENT_AFTER_FEE);
+
 
         assert.notEqual(credit, expectedCredit, "new higher bid won");
     }));
