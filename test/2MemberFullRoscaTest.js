@@ -154,8 +154,8 @@ contract('Full 2 Member ROSCA Test', function(accounts_) {
         // Total discounts by now is 0.10P.
 
         // winner of this round is p0. They win 1.0 * DEFAULT_POT * NR = 1.0 * 2C * 0.99 == 1.98C. Adding to that
-        // their existing credit of 2C, they have 3.78C.
-        assert.equal(contract.credits[0], 3.78 * CONTRIBUTION_SIZE);
+        // their existing credit of 1.9 C, they have 3.88C.
+        assert.equal(contract.credits[0], 3.88 * CONTRIBUTION_SIZE);
         assert.equal(contract.credits[1], 1.9 * CONTRIBUTION_SIZE);
         // TD == OLD_TD = 0.2 C
         assertWeiCloseTo(contract.totalDiscounts, 0.2 * CONTRIBUTION_SIZE);
@@ -163,8 +163,8 @@ contract('Full 2 Member ROSCA Test', function(accounts_) {
         // This round started with 2C .
         // Contribution is 0.8C.
         // p1 withdrew 0.873C .
-        // Thus we expect credit to be (2 + 0.9 - 0.873) == 2.027.
-        assert.equal(contract.balance, 2.027 * CONTRIBUTION_SIZE);
+        // Thus we expect credit to be (2 + 0.9 - 0.882) == 2.018.
+        assertWeiCloseTo(contract.balance, 2.018 * CONTRIBUTION_SIZE);
 
         assert.equal(contract.currentRound, 2); // currentRound value
         assert.isOk(yield rosca.endOfROSCA.call());
@@ -175,28 +175,28 @@ contract('Full 2 Member ROSCA Test', function(accounts_) {
         // totalDiscounts would be 0.2C.
         // Therefore everyone's credit should be 1.8C to be in good standing.
         // Amounts withdrawable:
-        // p0: 3.78C - 1.9C == 1.88C
+        // p0: 3.88C - 1.9C == 1.98C
         // p1: 1.8C - 1.9C == 0C
 
-        // Let p0 and p1 withdraw.
+        // Let p0 withdraw.
         let contractBalanceBefore = contractBalance();
+
         yield withdraw(0);
-        assert.equal(contractBalanceBefore - contractBalance(), 1.88 * CONTRIBUTION_SIZE);
+        assert.equal(contractBalanceBefore - contractBalance(), 1.98 * CONTRIBUTION_SIZE);
         assert.equal((yield getContractStatus()).credits[0], 1.9 * CONTRIBUTION_SIZE);
 
-        // Contract would be left with 2.027 C (last balance) - (1.88)C == 0.147 C
-        assertWeiCloseTo(contractBalance(), 0.147 * CONTRIBUTION_SIZE);
+        // Contract would be left with 2.018 C (last balance) - (1.98)C == 0.038 C
+        assertWeiCloseTo(contractBalance(), 0.038 * CONTRIBUTION_SIZE);
     }));
 
     it("post-ROSCA collection period", co(function*() {
         utils.increaseTime(ROUND_PERIOD);
         // Now only the foreperson can collect the entire remaining funds.
         yield utils.assertThrows(rosca.endROSCARetrieveFunds({from: accounts[1]}));
-        let p0balanceBefore = web3.eth.getBalance(accounts[0]);
         yield rosca.endROSCARetrieveFunds({from: accounts[0]});
-        let p0balanceAfter = web3.eth.getBalance(accounts[0]);
-        // Accounting for gas, we can't expect the entire funds to be transferred to p0.
-        assert.isAbove(p0balanceAfter - p0balanceBefore, 0.1 * CONTRIBUTION_SIZE);
-    }));
 
+        // since, the leftover balance is too low, check if the contract balance is empty instead
+        assert.equal(contractBalance(), 0);
+        //assert.isAbove(p0balanceAfter - p0balanceBefore, 0.1 * CONTRIBUTION_SIZE);
+    }));
 });
