@@ -235,13 +235,14 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.isNotOk(yield rosca.endOfROSCA.call());
   }));
   
-  it("4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good standing",
+  it("4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good standing," +
+      " p0 tries to withraw more than contract's balance",
       co(function*() {
-    // 0's credit is = 6.91C
+    // p0's credit is = 6.91C
     // This is the 4th round, so they need the following to hold:
     // newCredit + TD / MC == 4C => newCredit == 4C - TD / MC == 4C - 0.15 * 4C / 4 == 3.85C.
     // They should be able thus to withdraw 6.91C - 3.85C == 3.06C.
-    // Since contract's balance is only 2.424, p0's credit after withdraw 6.91C - 2.424 == 4.486
+    // Since contract's balance is only 2.424, p0's credit after withdraw 6.91C - 2.424C == 4.486C
     let contractBalanceBefore = contractBalance();
     yield withdraw(0);
     assert.equal(contractBalanceBefore - contractBalance(), 2.424 * CONTRIBUTION_SIZE);
@@ -297,7 +298,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // p2: nothing (still owes 1.9C)
     // p3: nothing (still owes 0.85C, even though has not won any round)
     
-    // Let p0 and p1 withdraw.
+    // Let p0 withdraw.
     let contractBalanceBefore = contractBalance();
     yield withdraw(0);
     assert.equal(contractBalanceBefore - contractBalance(), 0.636 * CONTRIBUTION_SIZE);
