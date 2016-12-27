@@ -207,7 +207,6 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     
     Promise.all([
       contribute(0, CONTRIBUTION_SIZE),  // p0's credit == 1.95C + C == 2.95C
-      //contribute(1, CONTRIBUTION_SIZE),  // p1's credit == 2.85C + C == 3.85C
       // p2 does not contribute this time.  p2's credit == 1.95C
       // p3 is still missing a contribution from last period, so still not in good standing
       contribute(3, CONTRIBUTION_SIZE),  // p3's credit == C + C == 2C
@@ -251,7 +250,6 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.equal(contractBalance(), 0);
 
     Promise.all([
-      //contribute(0, CONTRIBUTION_SIZE),  // p0's credit == 6.91C + C == 7.91C
       contribute(1, CONTRIBUTION_SIZE),  // p1's credit == 2.85C + C == 3.85C
       // p2 does not contribute this time.  p2's credit == 1.95C
       // p3 is still missing a contribution from 2nd period, so still not in good standing
