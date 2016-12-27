@@ -238,8 +238,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
   it("4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good standing",
       co(function*() {
     // 0's credit is = 6.91C
-    // This is the 3rd round, so they need the following to hold:
-    // newCredit + TD / MC == 3C => newCredit == 4C - TD / MC == 4C - 0.15 * 4C / 4 == 3.85C.
+    // This is the 4th round, so they need the following to hold:
+    // newCredit + TD / MC == 4C => newCredit == 4C - TD / MC == 4C - 0.15 * 4C / 4 == 3.85C.
     // They should be able thus to withdraw 6.91C - 3.85C == 3.06C.
     // Since contract's balance is only 2.424, p0's credit after withdraw 6.91C - 2.424 == 4.486
     let contractBalanceBefore = contractBalance();
