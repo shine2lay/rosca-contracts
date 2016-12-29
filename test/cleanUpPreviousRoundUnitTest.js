@@ -141,7 +141,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         assert.isOk(winner[2], "a non member was chosen when there were no bids");
     }));
 
-    it("checks if member with winnings and goodStanding doesn't need to contribute to be in good Standing nextRounds", co(function *() {
+    it("checks member with winnings and in good standing doesn't need to contribute to be in good Standing " +
+        "next rounds", co(function *() {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
@@ -160,7 +161,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             let contributions = (yield rosca.members.call(accounts[2]))[0];
             let winnings = (yield  rosca.members.call(accounts[2]))[1];
 
-            assert.equal(contributions, CONTRIBUTION_SIZE * (1 + i), "winnings didn't get transferred to contributions");
+            assert.equal(contributions, CONTRIBUTION_SIZE * (1 + i),
+                "winnings didn't get transferred to contributions");
             // winnings would've transferred to contributions since the user is in goodStanding
             assert.equal(winnings, DEFAULT_POT - (CONTRIBUTION_SIZE * i),
                 "winnings didn't get deducted"); // winner.winnings
