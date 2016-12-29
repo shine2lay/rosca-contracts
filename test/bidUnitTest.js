@@ -83,7 +83,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let credit = (yield rosca.members.call(accounts[2]))[0];
+        let credit = yield utils.getUserCredit(rosca, accounts[2]);
         let expectedCredit = CONTRIBUTION_SIZE + BID_TO_PLACE;
 
         assert.equal(credit, expectedCredit, "bid placed didn't affect winner's credit");
@@ -127,7 +127,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let p1Credit = (yield rosca.members.call(accounts[1]))[0];
+        let p1Credit = yield utils.getUserCredit(rosca, accounts[1]);
         let expectedCredit = CONTRIBUTION_SIZE + DEFAULT_POT;
 
         assert.equal(p1Credit.toNumber(), expectedCredit,
@@ -152,10 +152,9 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
 
-        let p3Credit = (yield rosca.members.call(accounts[3]))[0];
+        let p3Credit = yield utils.getUserCredit(rosca, accounts[3]);
         let expectedCredit = CONTRIBUTION_SIZE + LOWER_BID;
 
         assert.equal(p3Credit, expectedCredit, "original lower bid should have won");
     }));
-
 });

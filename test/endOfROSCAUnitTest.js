@@ -12,7 +12,7 @@ contract('end of ROSCA unit test', function(accounts) {
     // Note accounts[0] is the foreperson, deploying the contract.
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
     const MEMBER_COUNT = MEMBER_LIST.length + 1;  // foreperson
-    const CONTRIBUTION_SIZE = 1e17;
+    const CONTRIBUTION_SIZE = 1e16;
 
     // Runs the ROSCA, contributing funds as required, but never withdrawing - so that
     // the contract ends in a surplus.

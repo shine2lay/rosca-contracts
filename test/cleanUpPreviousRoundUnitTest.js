@@ -57,9 +57,9 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             eventFired = true;
             let user = yield rosca.members.call(log.args.winnerAddress);
             assert.equal(accounts[1], log.args.winnerAddress);
-            assert.isOk(user[2], "chosen address is not a member"); // user.alive
-            assert.isOk(user[1], "Paid member was chosen"); // user.paid
-            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + BID_TO_PLACE); // user.credit
+            assert.isOk(user[3], "chosen address is not a member"); // user.alive
+            assert.isOk(user[2], "Paid member was chosen"); // user.paid
+            assert.equal(user[0].add(user[1]), CONTRIBUTION_SIZE + BID_TO_PLACE); // user.winnings
         }));
 
         yield rosca.cleanUpPreviousRound();
@@ -68,7 +68,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         assert.isOk(eventFired, "LogRoundFundsReleased didn't fire");
     }));
 
-    it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function *() {
+    it("checks if random unpaid member in good Standing is picked when no bid was placed " +
+        "also checks that winnings gets added to contributions", co(function *() {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
@@ -99,7 +100,43 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         yield Promise.delay(300);
         assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
-        assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT,  // credit
+        assert.equal(winner[0], CONTRIBUTION_SIZE * 2, "winnings didn't get transferred to contributions");
+        // winnings would've transferred to contributions since the user is in goodStanding
+        assert.equal(winner[1].toString(), DEFAULT_POT - CONTRIBUTION_SIZE,
+            "lowestBid is not deposited into winner's credit"); // winner.credit
+        assert.isOk(winner[2], "a non member was chosen when there were no bids");
+    }));
+
+    it("checks if random unpaid member not in good Standing is picked when no bid was placed " +
+        "and there are no good standing members, also check that winnings dont go into contribution", co(function *() {
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+
+        utils.increaseTime(START_TIME_DELAY);
+        yield rosca.startRound();
+
+        let winner;
+        let possibleWinner = [accounts[0], accounts[1], accounts[2], accounts[3]];
+        let winnerAddress = 0;
+
+        let eventFired = false;
+        let fundsReleasedEvent = rosca.LogRoundFundsReleased();
+        fundsReleasedEvent.watch(co(function *(error,log) {
+            fundsReleasedEvent.stopWatching();
+            eventFired = true;
+            winnerAddress = log.args.winnerAddress;
+            winner = yield rosca.members.call(log.args.winnerAddress);
+        }));
+        utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+
+        yield rosca.cleanUpPreviousRound();
+
+        yield Promise.delay(300);
+
+        assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
+        assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
+        assert.equal(winner[0], 0, "winnings of non-goodStanding member got transferred to contributions");
+        assert.equal(winner[1], DEFAULT_POT,  // winnings
             "lowestBid is not deposited into winner's credit"); // winner.credit
         assert.isOk(winner[2], "a non member was chosen when there were no bids");
     }));

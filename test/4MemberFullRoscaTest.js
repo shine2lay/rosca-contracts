@@ -48,7 +48,8 @@ function* getContractStatus() {
   let balance = web3.eth.getBalance(rosca.address).toNumber();
   return {
     credits: [
-      results[0][0].toNumber(), results[1][0].toNumber(), results[2][0].toNumber(), results[3][0].toNumber()],
+        (results[0][0].add(results[0][1]).toNumber()), (results[1][0].add(results[1][1]).toNumber()),
+        (results[2][0].add(results[2][1]).toNumber()), (results[3][0].add(results[3][1]).toNumber())],
     totalDiscounts: results[4].toNumber(),
     currentRound: results[5].toNumber(),
     balance: balance,
@@ -62,7 +63,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
   const ROUND_PERIOD_IN_DAYS = 3;
   const ROUND_PERIOD = ROUND_PERIOD_IN_DAYS * 86400;
   const MEMBER_COUNT = 4;
-  const CONTRIBUTION_SIZE = 1e18;
+  const CONTRIBUTION_SIZE = 1e16;
   const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
   const SERVICE_FEE_IN_THOUSANDTHS = 10;
   const NET_REWARDS_RATIO = ((1000 - SERVICE_FEE_IN_THOUSANDTHS) / 1000);
@@ -246,7 +247,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.isNotOk(yield rosca.endOfROSCA.call());
   }));
 
-  it("4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good standing," +
+  it("4th round (last): nodoby bids and p3, the only non-winner, wins but won't be able to withdraw," +
       " p0 tries to withraw more than contract's balance",
       co(function*() {
     // p0's credit is = 6.95C
@@ -261,7 +262,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     let contract = yield getContractStatus();
 
     // Contract will reduce by 2.3265C as noted above.
-    assert.equal(contractBalanceBefore - contract.balance, 2.3265 * CONTRIBUTION_SIZE);
+    assertWeiCloseTo(contractBalanceBefore - contract.balance, 2.3265 * CONTRIBUTION_SIZE);
     // Contract would be left with 2.496 (last balance) - 2.3265C (just withdrew) = 0.1695C
     assert.equal(contract.balance, 0.1695 * CONTRIBUTION_SIZE);
 
@@ -292,7 +293,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assertWeiCloseTo(contract.credits[0], 4.6 * CONTRIBUTION_SIZE);
     assertWeiCloseTo(contract.credits[1], 3.85 * CONTRIBUTION_SIZE);
     assertWeiCloseTo(contract.credits[2], 1.95 * CONTRIBUTION_SIZE); // not in good standing
-    assertWeiCloseTo(contract.credits[3], 3 * CONTRIBUTION_SIZE); // not in good standing
+    assertWeiCloseTo(contract.credits[3], 7 * CONTRIBUTION_SIZE); // not in good standing but still wins the pot
     // The entire pot was won, TD does not change
     assertWeiCloseTo(contract.totalDiscounts, DEFAULT_POT * (0.10 + 0.05));
 
@@ -338,13 +339,17 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // Contract just got 2C - 0.099 == 1.901C more funds. Add that to 1.427C from above.
     assertWeiCloseTo(contract.balance, 3.328 * CONTRIBUTION_SIZE);
 
-    // p3 owes 0.85C. He pays them but cannot retrieve any funds, as he was not in good standing when
-    // he was supposed to win.
-    yield contribute(3, 0.85 * CONTRIBUTION_SIZE);
+    // p3 owes 0.85C. He pays them and can only retrieve funds after he contributed.
     yield utils.assertThrows(withdraw(3));
+    yield contribute(3, 0.85 * CONTRIBUTION_SIZE);
+    withdraw(3);
     contract = yield getContractStatus();
-    // Contract has 0.85C (new funds) + 3.328C (existing) ==
-    assertWeiCloseTo(contract.balance, 4.178 * CONTRIBUTION_SIZE);
+    // Contract has 0.85C (new funds) + 3.328C (existing) == 4.178
+    // p3 withdraws 4C so contract balance now stands at 0.178 + 4C * 0.01 == 0.218 ;
+
+    assertWeiCloseTo(contract.balance, 0.218 * CONTRIBUTION_SIZE);
+    // add some contribution to create a scenario where there are funds left over and allow foreperson to withdraw them
+    yield contribute(2, CONTRIBUTION_SIZE);
   }));
 
   it("post-ROSCA collection period", co(function*() {
@@ -356,7 +361,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     let p0balanceAfter = web3.eth.getBalance(accounts[0]);
     // Accounting for gas, we can't expect the entire funds to be transferred to p0.
     assert.isAbove(p0balanceAfter - p0balanceBefore,
-        4 * CONTRIBUTION_SIZE / 1000 * NET_REWARDS_RATIO);
+        0.5 * CONTRIBUTION_SIZE / 1000 * NET_REWARDS_RATIO);
 
     // Only the feeCollector can collect the fees.
     yield utils.assertThrows(rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));

@@ -38,6 +38,11 @@ module.exports = {
     return web3.eth.getBalance(rosca.address) - (yield rosca.totalFees.call());
   },
 
+  getUserCredit: function*(rosca, address) {
+    let user = yield rosca.members.call(address);
+    return user[0].add(user[1]);
+  },
+
   getGasUsage: function(transactionPromise, extraData) {
     return new Promise(function(resolve, reject) {
       transactionPromise.then(function(txId) {
