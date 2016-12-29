@@ -110,7 +110,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let creditAfter = yield utils.getUserCredit(rosca, accounts[2]);
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
         let contractCredit = yield utils.contractNetCredit(rosca);
-        let totalFees = yield rosca.totalFees.call();
 
         assert.equal(contractCredit, 0, "contract balance should've been equal to totalFees");
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
@@ -147,7 +146,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         assert.isAbove(contractCredit, 0); // contract should have some balance leftover after the withdraw
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
-        assert.equal(creditAfter.toString(), currentRound * CONTRIBUTION_SIZE, "withdraw doesn't send the right amount");
+        assert.equal(creditAfter.toString(), currentRound * CONTRIBUTION_SIZE,
+            "withdraw doesn't send the right amount");
     }));
 
     it("withdraw when contract can't send what the user is entitled while totalDiscount != 0", co(function *() {
