@@ -210,6 +210,7 @@ contract ROSCA {
     LogRoundFundsReleased(winnerAddress, lowestBid);
 
     // use winnings to satisfy the contribution requirement if member didn't contribute this round
+    // however, if user is delinquent (i.e. hasn't paid in previous rounds either), they cannot use their winning to cover for the contributions
     uint256 discount = totalDiscounts / membersAddresses.length;
     for (uint16 j = 0; j < membersAddresses.length; j++) {
       User member = members[membersAddresses[j]];
@@ -283,45 +284,47 @@ contract ROSCA {
     uint256 memberContributions = sender.contributions + totalDiscounts / membersAddresses.length;
     uint256 totalCredit = memberContributions + sender.winnings;
     uint256 totalDebit = currentRound * contributionSize;
-    // first check if member is good standing, then check if there is anything to withdraw, if not throw
+    // Verify member is in good standing and there are any funds to withdraw.
     if (totalDebit > memberContributions || totalDebit >= totalCredit) throw;
 
-    uint256 amountToWithdraw = memberContributions - totalDebit ;
+    uint256 contributionsToWithdraw = memberContributions - totalDebit;
     uint256 winningsToWithdraw = sender.winnings;
-    uint256 amountAfterFee = amountToWithdraw / 1000 * (1000 - serviceFeeInThousandths);
+    uint256 contributionAfterFee = contributionsToWithdraw / 1000 * (1000 - serviceFeeInThousandths);
     uint256 winningsAfterFee = winningsToWithdraw / 1000 * (1000 - serviceFeeInThousandths);
 
-    uint256 contractBalance = this.balance - totalFees;
+    uint256 contractNetBalance = this.balance - totalFees;
 
     // check if contract's balance is less than total amount to withdraw
-    if (contractBalance < amountAfterFee + winningsAfterFee) {
-      LogCannotWithdrawFully(amountAfterFee + winningsAfterFee,  this.balance - totalFees); // Let user withdraw the funds into a safe place
+    if (contractNetBalance < contributionAfterFee + winningsAfterFee) {
+      LogCannotWithdrawFully(contributionAfterFee + winningsAfterFee,  this.balance - totalFees);
 
-      if (contractBalance > amountAfterFee) {  // balance is greater than amountAfterFee but less than winnings account
-        contractBalance -= amountAfterFee;
-        winningsAfterFee = contractBalance;
-        winningsToWithdraw = contractBalance * 1000 / (1000 - serviceFeeInThousandths);
-      } else if (contractBalance > winningsAfterFee) { // balance is greater than winnings but less than amountAfterFee
-        contractBalance -= winningsAfterFee;
-        amountAfterFee = contractBalance;
-        amountToWithdraw = contractBalance * 1000 / (1000 - serviceFeeInThousandths);
-      } else { // balance is less than both accounts so withdraw it from contributions account first.
-        amountAfterFee = contractBalance;
-        amountToWithdraw = contractBalance * 1000 / (1000 - serviceFeeInThousandths);
+      // contractBalance can be more than one account or less than both
+      if (contractNetBalance > contributionAfterFee) {
+        contractNetBalance -= contributionAfterFee;
+        // if balance is greater than contributionsAfterFee so it will be less than winningsAfterFee
+        winningsAfterFee = contractNetBalance;
+        winningsToWithdraw = contractNetBalance * 1000 / (1000 - serviceFeeInThousandths);
+      } else if (contractNetBalance > winningsAfterFee) {
+        contractNetBalance -= winningsAfterFee;
+        // if balance is greater than winningsAfterFee so it will be less than contributionsAfterFee
+        contributionAfterFee = contractNetBalance;
+        contributionsToWithdraw = contractNetBalance * 1000 / (1000 - serviceFeeInThousandths);
+      } else {
+        contributionAfterFee = contractNetBalance;
+        contributionsToWithdraw = contractNetBalance * 1000 / (1000 - serviceFeeInThousandths);
         winningsToWithdraw = 0;
       }
-
     }
-    sender.contributions -= amountToWithdraw;
+    sender.contributions -= contributionsToWithdraw;
     sender.winnings -= winningsToWithdraw;
-    if (!msg.sender.send(amountAfterFee + winningsAfterFee)) {   // if the send() fails, put the allowance back to its original place
+    if (!msg.sender.send(contributionAfterFee + winningsAfterFee)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
-      sender.contributions += amountToWithdraw;
+      sender.contributions += contributionsToWithdraw;
       sender.winnings += winningsToWithdraw;
       return false;
     }
-    LogFundsWithdrawal(msg.sender, (amountToWithdraw + winningsToWithdraw) / 1000 * (1000 - serviceFeeInThousandths));
+    LogFundsWithdrawal(msg.sender, (contributionsToWithdraw + winningsToWithdraw) / 1000 * (1000 - serviceFeeInThousandths));
     return true;
 
   }

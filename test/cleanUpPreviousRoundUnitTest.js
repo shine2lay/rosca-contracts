@@ -108,7 +108,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("checks if random unpaid member not in good Standing is picked when no bid was placed " +
-        "and there are no good standing members, also check that winnings dont go into contribution", co(function *() {
+        "and there are no good standing members, also check that winnings don't go into contribution", co(function *() {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
@@ -139,5 +139,31 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         assert.equal(winner[1], DEFAULT_POT,  // winnings
             "lowestBid is not deposited into winner's credit"); // winner.credit
         assert.isOk(winner[2], "a non member was chosen when there were no bids");
+    }));
+
+    it("checks if member with winnings and goodStanding doesn't need to contribute to be in good Standing nextRounds", co(function *() {
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+
+        utils.increaseTime(START_TIME_DELAY);
+        yield Promise.all([
+            rosca.startRound(),
+            // member 2 will be eligible to win the pot if no bid was placed
+            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
+        ]);
+
+        // testing two rounds should be enough to display that the function works as intended
+        for(let i = 1; i < 3; i++) {
+            utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+
+            yield rosca.startRound();
+            let contributions = (yield rosca.members.call(accounts[2]))[0];
+            let winnings = (yield  rosca.members.call(accounts[2]))[1];
+
+            assert.equal(contributions, CONTRIBUTION_SIZE * (1 + i), "winnings didn't get transferred to contributions");
+            // winnings would've transferred to contributions since the user is in goodStanding
+            assert.equal(winnings, DEFAULT_POT - (CONTRIBUTION_SIZE * i),
+                "winnings didn't get deducted"); // winner.winnings
+        }
     }));
 });
