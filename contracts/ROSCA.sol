@@ -220,7 +220,7 @@ contract ROSCA {
       uint256 discount = totalDiscounts / membersAddresses.length;
       uint256 requiredContribution = currentRound * contributionSize;
       if ( credit + discount < requiredContribution) {
-        totalFees -= requiredContribution - (credit - discount);
+        totalFees -= requiredContribution - credit;
       }
     }
     totalFees = totalFees / 1000 * serviceFeeInThousandths; // might be wrong
