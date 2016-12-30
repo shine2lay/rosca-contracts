@@ -81,6 +81,7 @@ contract ROSCA {
 
   struct User {
     uint256 credit;  // amount of funds user has contributed so far
+    uint256 debt; // only used in case user won the pot while not in good standing
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
   }
@@ -156,7 +157,7 @@ contract ROSCA {
 
   function addMember(address newMember) internal {
     if (members[newMember].alive) throw;
-    members[newMember] = User({paid: false , credit: 0, alive: true});
+    members[newMember] = User({paid: false , credit: 0, alive: true, debt: 0});
     membersAddresses.push(newMember);
   }
 
@@ -184,28 +185,45 @@ contract ROSCA {
   }
 
   function cleanUpPreviousRound() internal {
+    address lastUnpaid = 0x0;
     if (winnerAddress == 0) {
       // There is no bid in this round. Find an unpaid address for this epoch.
       uint256 semi_random = now % membersAddresses.length;
       for (uint16 i = 0; i < membersAddresses.length; i++) {
         address candidate = membersAddresses[(semi_random + i) % membersAddresses.length];
-        if (!members[candidate].paid &&
-            members[candidate].credit + (totalDiscounts / membersAddresses.length) >= (currentRound * contributionSize)) { // check if the member is in good standing
-          winnerAddress = candidate;
-          break;
+        if (!members[candidate].paid) {
+          if (members[candidate].credit + (totalDiscounts / membersAddresses.length) >= (currentRound * contributionSize)) {
+            winnerAddress = candidate;
+            break;
+          }
+          lastUnpaid = candidate;
         }
+      }
+      if (winnerAddress == 0) {
+        winnerAddress = lastUnpaid;
       }
       // Also - set lowestBid to the right value.
       lowestBid = contributionSize * membersAddresses.length;
     }
-    if (winnerAddress == 0) { // no potential winner
-      LogRoundNoWinner(currentRound);
-    } else {
-      totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
-      members[winnerAddress].credit += lowestBid;
-      members[winnerAddress].paid = true;
-      LogRoundFundsReleased(winnerAddress, lowestBid);
+    totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
+    if (winnerAddress == lastUnpaid) {
+      members[winnerAddress].debt = currentRound * contributionSize - (members[winnerAddress].credit + totalDiscounts / membersAddresses.length);
     }
+    members[winnerAddress].credit += lowestBid;
+    members[winnerAddress].paid = true;
+    LogRoundFundsReleased(winnerAddress, lowestBid);
+
+    // ReCalculate totalFees
+    totalFees = currentRound * membersAddresses.length * contributionSize;
+    for (uint16 j = 0; j < membersAddresses.length; j++) {
+      uint256 credit = members[membersAddresses[j]].credit;
+      uint256 discount = totalDiscounts / membersAddresses.length;
+      uint256 requiredContribution = currentRound * contributionSize;
+      if ( credit + discount < requiredContribution) {
+        totalFees -= requiredContribution - (credit - discount);
+      }
+    }
+    totalFees = totalFees / 1000 * serviceFeeInThousandths; // might be wrong
   }
 
   /**
@@ -216,9 +234,9 @@ contract ROSCA {
    */
   function contribute() payable onlyFromMember onlyIfEscapeHatchInactive external {
     members[msg.sender].credit += msg.value;
-    // TODO(ron): this has a bad edge case: it will take fees of any excessive contributions made.
-    // Fix this once we switch to the contributions/winnings model.
-    totalFees += msg.value / 1000 * serviceFeeInThousandths;
+    if (members[msg.sender].debt > 0) {
+      members[msg.sender].debt = members[msg.sender].debt > msg.value ? members[msg.sender].debt - msg.value : 0;
+    }
 
     LogContributionMade(msg.sender, msg.value);
   }
@@ -261,8 +279,10 @@ contract ROSCA {
    * sends the fund to that address, otherwise sends to msg.sender.
    */
   function withdraw() onlyFromMember onlyIfEscapeHatchInactive external returns(bool success) {
-    uint256 totalCredit = members[msg.sender].credit + totalDiscounts / membersAddresses.length;
-    uint256 totalDebit = currentRound * contributionSize;
+    uint256 totalCredit = members[msg.sender].debt > 0 ? members[msg.sender].credit : members[msg.sender].credit + totalDiscounts / membersAddresses.length;
+    // if member is in debt, use epoch size as totalDebit, this allows the user to retrieve the amount contributed only
+    // winnings won't be a part of withdrawal
+    uint256 totalDebit = members[msg.sender].debt > 0 ? membersAddresses.length * contributionSize : currentRound * contributionSize;
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
 
     uint256 amountToWithdraw = totalCredit - totalDebit;
