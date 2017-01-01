@@ -38,7 +38,7 @@ contract ROSCA {
   event LogNewLowestBid(uint256 bid,address winnerAddress);
   event LogRoundFundsReleased(address winnerAddress, uint256 amountInWei);
   event LogRoundNoWinner(uint256 currentRound);
-  event LogFundsWithdrawal(address user, uint256 amount);
+  event LogFundsWithdrawal(address user, uint256 amount, uint256 amountAfterFee);
   event LogCannotWithdrawFully(uint256 requestedAmount,uint256 contractBalance);
   event LogUnsuccessfulBid(address bidder,uint256 bidInWei,uint256 lowestBid);
 
@@ -80,7 +80,7 @@ contract ROSCA {
   bool internal escapeHatchActive = false;
 
   struct User {
-    uint256 credit;  // amount of funds user has contributed so far
+    uint256 credit;  // amount of funds user has contributed + winnings from bidding
     uint256 debt; // only used in case user won the pot while not in good standing
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
@@ -185,45 +185,35 @@ contract ROSCA {
   }
 
   function cleanUpPreviousRound() internal {
-    address lastUnpaid = 0x0;
+    address delinquentWinner = 0x0;
     if (winnerAddress == 0) {
       // There is no bid in this round. Find an unpaid address for this epoch.
       uint256 semi_random = now % membersAddresses.length;
       for (uint16 i = 0; i < membersAddresses.length; i++) {
         address candidate = membersAddresses[(semi_random + i) % membersAddresses.length];
         if (!members[candidate].paid) {
+          // give priority to those who are in good standing first
           if (members[candidate].credit + (totalDiscounts / membersAddresses.length) >= (currentRound * contributionSize)) {
             winnerAddress = candidate;
             break;
           }
-          lastUnpaid = candidate;
+          delinquentWinner = candidate;
         }
       }
       if (winnerAddress == 0) {
-        winnerAddress = lastUnpaid;
+        winnerAddress = delinquentWinner;
       }
       // Also - set lowestBid to the right value.
       lowestBid = contributionSize * membersAddresses.length;
     }
     totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
-    if (winnerAddress == lastUnpaid) {
+    if (winnerAddress == delinquentWinner) {
       members[winnerAddress].debt = currentRound * contributionSize - (members[winnerAddress].credit + totalDiscounts / membersAddresses.length);
     }
     members[winnerAddress].credit += lowestBid;
     members[winnerAddress].paid = true;
     LogRoundFundsReleased(winnerAddress, lowestBid);
 
-    // ReCalculate totalFees
-    totalFees = currentRound * membersAddresses.length * contributionSize;
-    for (uint16 j = 0; j < membersAddresses.length; j++) {
-      uint256 credit = members[membersAddresses[j]].credit;
-      uint256 discount = totalDiscounts / membersAddresses.length;
-      uint256 requiredContribution = currentRound * contributionSize;
-      if ( credit + discount < requiredContribution) {
-        totalFees -= requiredContribution - credit;
-      }
-    }
-    totalFees = totalFees / 1000 * serviceFeeInThousandths; // might be wrong
   }
 
   /**
@@ -286,23 +276,31 @@ contract ROSCA {
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
 
     uint256 amountToWithdraw = totalCredit - totalDebit;
-    uint256 amountAfterFee = amountToWithdraw / 1000 * (1000 - serviceFeeInThousandths);
+    // uint256 amountAfterFee = amountToWithdraw / 1000 * (1000 - serviceFeeInThousandths);
 
-    uint256 amountAvailable = this.balance - totalFees;
-    if (amountAvailable < amountAfterFee) {
+    uint256 amountAvailable = this.balance - (totalFees / 1000 * serviceFeeInThousandths);
+    if (amountAvailable < amountToWithdraw) { //amountAfterFee) {
       // This may happen if some participants are delinquent.
-      amountAfterFee = amountAvailable;
       LogCannotWithdrawFully(amountToWithdraw, amountAvailable);
-      amountToWithdraw = amountAvailable * 1000 / (1000 - serviceFeeInThousandths);
+      amountToWithdraw = amountAvailable;
+    }
+    uint256 amountAfterFee = amountToWithdraw;
+    uint256 feeLimit = currentRound * contributionSize * membersAddresses.length;
+    if (totalFees < feeLimit && members[msg.sender].paid)
+    {
+      uint256 feeToTake = totalFees + amountToWithdraw > feeLimit ?
+          feeLimit - totalFees : amountToWithdraw;
+      totalFees += feeToTake;
+      amountAfterFee -= (feeToTake / 1000 * serviceFeeInThousandths);
     }
     members[msg.sender].credit -= amountToWithdraw;
-    if (!msg.sender.send(amountAfterFee)) {   // if the send() fails, put the allowance back to its original place
+    if (!msg.sender.send(amountAfterFee)) {  //amountAfterFee)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
       members[msg.sender].credit += amountToWithdraw;
       return false;
     }
-    LogFundsWithdrawal(msg.sender, amountAfterFee);
+    LogFundsWithdrawal(msg.sender, amountToWithdraw, amountAfterFee);
     return true;
   }
 
@@ -318,14 +316,14 @@ contract ROSCA {
     if (now < roscaCollectionTime || forepersonSurplusCollected) throw;
 
     forepersonSurplusCollected = true;
-    uint256 amountToCollect = this.balance - totalFees;
+    uint256 amountToCollect = this.balance - (totalFees / 1000 * serviceFeeInThousandths);
     if (!foreperson.send(amountToCollect)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
       forepersonSurplusCollected = false;
       return false;
     } else {
-      LogFundsWithdrawal(foreperson, amountToCollect);
+      LogFundsWithdrawal(foreperson, amountToCollect, amountToCollect);
     }
   }
 
@@ -340,7 +338,7 @@ contract ROSCA {
     uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
     if (now < roscaCollectionTime || totalFees == 0) throw;
 
-    uint256 tempTotalFees = totalFees;  // prevent re-entry.
+    uint256 tempTotalFees = totalFees / 1000 * serviceFeeInThousandths;  // prevent re-entry.
     totalFees = 0;
     if (!FEE_ADDRESS.send(tempTotalFees)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing. This may happen
@@ -348,7 +346,7 @@ contract ROSCA {
       totalFees = tempTotalFees;
       return false;
     } else {
-      LogFundsWithdrawal(FEE_ADDRESS, totalFees);
+      LogFundsWithdrawal(FEE_ADDRESS, totalFees, totalFees);
     }
   }
 

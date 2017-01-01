@@ -135,12 +135,12 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
 
     // This round contract started with 0.
     // Participants contributed 10C + C + 1.2C + C == 13.2C.
-    // p0 withdrew 10C - 1C == 9C. The fees (of 0.09C) remain in the contract
-    // Expected balance is thus 13.2C - 0.09C +  == 4.29C.
-    assert.equal(contract.balance, 4.29 * CONTRIBUTION_SIZE);
+    // p0 withdrew 10C - 1C == 9C.
+    // Expected balance is thus 13.2C - 9.0C +  == 4.2C.
+    assert.equal(contract.balance, 4.2 * CONTRIBUTION_SIZE);
+    // comment below no longer applied
     // Total fees as of now is deducted from total contributions which are 1% of (10 + 1 + 1.2 + 1)C == 0.132C.
-    assert.equal(contract.totalFees, MEMBER_COUNT * CONTRIBUTION_SIZE * (contract.currentRound - 1) / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
-
+    assert.equal(contract.totalFees, 0);
 
     assert.equal(contract.currentRound, 2); // currentRound value
     assert.isNotOk(yield rosca.endOfROSCA.call());
@@ -191,11 +191,10 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // This round started with 4.29C .
     // Contributions were 0.8C + 0.95C .
     // p2 withdrew 2.85C . Out of that 1% were retained as fees, so 2.8215C was transferred out.
-    // Thus we expect credit to be (4.29 + 0.8 + 0.95 - 2.8215)C == 3.25612C
-    assert.equal(contract.balance, 3.2185 * CONTRIBUTION_SIZE);
+    // Thus we expect credit to be (4.2 + 0.8 + 0.95 - 2.8215)C == 3.1285C
+    assert.equal(contract.balance, 3.1285 * CONTRIBUTION_SIZE);
     // totalFees == 2 * 4 = 8 - 1 (1 person didn't contribute) = 0.07C;
-    assert.isAtMost(contract.totalFees, (MEMBER_COUNT * CONTRIBUTION_SIZE * (contract.currentRound -1) - CONTRIBUTION_SIZE)
-      / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assert.equal(contract.totalFees, 2.85 * CONTRIBUTION_SIZE);
     assert.equal(contract.currentRound, 3); // currentRound value
     assert.isNotOk(yield rosca.endOfROSCA.call());
   }));
@@ -212,8 +211,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     let contract = yield getContractStatus();
     assert.equal(contractBalanceBefore - contract.balance, 2.7225 * CONTRIBUTION_SIZE);
     assert.equal((yield getContractStatus()).credits[1], 2.85 * CONTRIBUTION_SIZE);
-    // Contract would be left with 3.2185C (last balance) - 2.7225C (just withdraw) = 0.4145C
-    assert.equal(contract.balance, 0.496 * CONTRIBUTION_SIZE);
+    // Contract would be left with 3.1285C (last balance) - 2.7225C (just withdraw) = 0.406C
+    assert.equal(contract.balance, 0.406 * CONTRIBUTION_SIZE);
 
     Promise.all([
       contribute(0, CONTRIBUTION_SIZE),  // p0's credit == 1.95C + C == 2.95C
@@ -239,10 +238,9 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assertWeiCloseTo(contract.totalDiscounts, 0.6 * CONTRIBUTION_SIZE);  // The entire pot was won, TD does not change,
 
     // Last we checked contractBalance (in this test) it was 0.496C. With 2 contributions of C each, we get to 2.424C.
-    assert.equal(contract.balance, 2.496 * CONTRIBUTION_SIZE);
-    // totalFees == 3 * 4 = 12 - 1(p2) - 1(p3) = 10C == 0.1 C
-    assert.isAtMost(contract.totalFees, (MEMBER_COUNT * CONTRIBUTION_SIZE * (contract.currentRound -1) - 2 * CONTRIBUTION_SIZE)
-        / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assert.equal(contract.balance, 2.406 * CONTRIBUTION_SIZE);
+    // totalFees == 2.85 + 2.75 = 5.6
+    assert.isAtMost(contract.totalFees, 5.6 * CONTRIBUTION_SIZE);
 
     assert.equal(contract.currentRound, 4); // currentRound value
     assert.isNotOk(yield rosca.endOfROSCA.call());
@@ -255,20 +253,19 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // This is the 4th round, so they need the following to hold:
     // newCredit + TD / MC == 4C => newCredit == 4C - TD / MC == 4C - 0.15 * 4C / 4 == 3.85C.
     // They should be able thus to withdraw 6.95C - 3.85C == 3.1C.
-    // Since contract's net balance (w/o fees) is only (2.496 - 0.0995)C == 2.3965,
-    // p0's credit after withdraw should be 6.95C - 2.3965C / 99% == 4.52929292929 C
+    // Since contract's net balance (w/o fees) is only (2.406 - 0.056)C == 2.35,
+    // p0's credit after withdraw should be 6.95C - 2.35C / 99% == 4.6 C
     let contractBalanceBefore = (yield getContractStatus()).balance;
-    let totalFees = (yield getContractStatus()).totalFees;
     yield withdraw(0);
 
     let contract = yield getContractStatus();
 
-    // Contract will reduce to 0 by 2.3965C as noted above.
-    assert.equal(contractBalanceBefore - contract.balance, 2.3965 * CONTRIBUTION_SIZE);
-    // Contract would be left with 2.496 (last balance) - 2.3265C (just withdrew) = 0.1695C
-    assert.equal(contract.balance, 0.0995 * CONTRIBUTION_SIZE);
+    // Contract will reduce to 0 by 2.35 * 0.99 = 2.3265C as noted above.
+    assert.equal(contractBalanceBefore - contract.balance, 2.3265 * CONTRIBUTION_SIZE);
+    // Contract would be left with 2.406 (last balance) - 2.3265C (just withdrew) = 0.0795C
+    assert.equal(contract.balance, 0.0795 * CONTRIBUTION_SIZE);
 
-    assertWeiCloseTo(contract.credits[0], 4.52929292929 * CONTRIBUTION_SIZE);
+    assertWeiCloseTo(contract.credits[0], 4.6 * CONTRIBUTION_SIZE);
 
     Promise.all([
       contribute(1, CONTRIBUTION_SIZE),  // p1's credit == 2.85C + C == 3.85C
@@ -292,19 +289,18 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     contract = yield getContractStatus();
 
     // Note that all credits are actually 3C more than participants can draw (neglecting totalDiscounts).
-    assertWeiCloseTo(contract.credits[0], 4.52929292929 * CONTRIBUTION_SIZE);
+    assertWeiCloseTo(contract.credits[0], 4.6 * CONTRIBUTION_SIZE);
     assertWeiCloseTo(contract.credits[1], 3.85 * CONTRIBUTION_SIZE);
     assertWeiCloseTo(contract.credits[2], 1.95 * CONTRIBUTION_SIZE); // not in good standing
     assertWeiCloseTo(contract.credits[3], 7 * CONTRIBUTION_SIZE); // not in good standing but won the pot
     // The entire pot was won, TD does not change
     assertWeiCloseTo(contract.totalDiscounts, DEFAULT_POT * (0.10 + 0.05));
 
-    // Last we checked contractBalance (in this test) it was 0.1695C. With 2 contributions of C each, we get to 2.1695C.
-    assertWeiCloseTo(contract.balance, 2.0995 * CONTRIBUTION_SIZE);
+    // Last we checked contractBalance (in this test) it was 0.0795C. With 2 contributions of C each, we get to 2.0795C.
+    assertWeiCloseTo(contract.balance, 2.0795 * CONTRIBUTION_SIZE);
 
     // totalFees = 4 * 4 = 16 - 2(p2) = 14C  == 0.14C
-    assert.isAtMost(contract.totalFees, (MEMBER_COUNT * CONTRIBUTION_SIZE * contract.currentRound - 2 * CONTRIBUTION_SIZE)
-        / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assert.isAtMost(contract.totalFees, 7.95 * CONTRIBUTION_SIZE);
 
     assert.equal(contract.currentRound, 4); // currentRound value
     // End of Rosca has been reached
@@ -321,35 +317,35 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // p2: nothing (still owes 1.9C)
     // p3: nothing (still owes 0.85C, even though has not won any round)
 
-    // Let p0 withdraw. Contract will send 99% of the 0.67929292929C == 0.67249999999C.
+    // Let p0 withdraw. Contract will send 99% of the 0.75C == 0.7425C.
     let contractBalanceBefore = (yield getContractStatus()).balance;
     yield withdraw(0);
 
     let contract = yield getContractStatus();
     assertWeiCloseTo(
-        contractBalanceBefore - contract.balance, 0.67249999999 * CONTRIBUTION_SIZE);
-    // last rounded ended with contract.balance == 2.1695. So it should now have (2.1695 - 0.7425C) == 1.427C
-    assertWeiCloseTo(contract.balance, 1.427 * CONTRIBUTION_SIZE);
+        contractBalanceBefore - contract.balance, 0.7425 * CONTRIBUTION_SIZE);
+    // last rounded ended with contract.balance == 2.0795. So it should now have (2.0795 - 0.7425C) == 1.337C
+    assertWeiCloseTo(contract.balance, 1.337 * CONTRIBUTION_SIZE);
     assert.equal(contract.credits[0], 3.85 * CONTRIBUTION_SIZE);
 
     // p2 who owes 1.9C contributes 2C and gets back 0.1C.
     yield contribute(2, 2 * CONTRIBUTION_SIZE);
     contractBalanceBefore = (yield getContractStatus()).balance;
     yield withdraw(2);
+
     contract = yield getContractStatus();
     // Contract retains 1% of the withdrawl, so 0.099 is sent.
     assert.equal(
         contractBalanceBefore - contract.balance, 0.099 * CONTRIBUTION_SIZE);
-    // Contract just got 2C - 0.099 == 1.901C more funds. Add that to 1.427C from above.
-    assertWeiCloseTo(contract.balance, 3.328 * CONTRIBUTION_SIZE);
+    // Contract just got 2C - 0.099 == 1.901C more funds. Add that to 1.337C from above.
+    assertWeiCloseTo(contract.balance, 3.238 * CONTRIBUTION_SIZE);
 
     yield contribute(3, 0.85 * CONTRIBUTION_SIZE);
     yield withdraw(3);
     contract = yield getContractStatus();
-    // Contract has 0.85C (new funds) + 3.328C (existing) - 4 * 0.99 (p3 withdrawal) == 0.218
-    // TODO (shine): something doesn't look right, take a closer look
-    assertWeiCloseTo(contract.balance, 0.218 * CONTRIBUTION_SIZE);
-    yield contribute(2, CONTRIBUTION_SIZE); // setting up a for a scenario where foreman can withdraw surplus
+    // Contract has 0.85C (new funds) + 3.328C (existing) - 4 * 0.99 (p3 withdrawal) == 0.128
+    assertWeiCloseTo(contract.balance, 0.128 * CONTRIBUTION_SIZE);
+    yield contribute(2, CONTRIBUTION_SIZE * 2); // setting up a for a scenario where foreman can withdraw surplus
   }));
 
   it("post-ROSCA collection period", co(function*() {
@@ -361,7 +357,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     let p0balanceAfter = web3.eth.getBalance(accounts[0]);
     // Accounting for gas, we can't expect the entire funds to be transferred to p0.
     assert.isAbove(p0balanceAfter - p0balanceBefore,
-        0.5 * CONTRIBUTION_SIZE / 1000 * NET_REWARDS_RATIO);
+        0.2 * CONTRIBUTION_SIZE / 1000 * NET_REWARDS_RATIO);
 
     // Only the feeCollector can collect the fees.
     yield utils.assertThrows(rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));
@@ -373,4 +369,5 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // TODO(ronme): more precise calculations after we move to the contribs/winnings model.
     assert.isAbove(feeCollectorBalanceAfter, feeCollectorBalanceBefore);
   }));
+
 });

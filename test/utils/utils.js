@@ -34,8 +34,8 @@ module.exports = {
         SERVICE_FEE_IN_THOUSANDTHS);
   },
 
-  contractNetCredit: function*(rosca) {
-    return web3.eth.getBalance(rosca.address) - (yield rosca.totalFees.call());
+  contractNetCredit: function*(rosca, serviceFeeInThousandths) {
+    return web3.eth.getBalance(rosca.address) - (yield rosca.totalFees.call()) / 1000 * serviceFeeInThousandths;
   },
 
   getGasUsage: function(transactionPromise, extraData) {

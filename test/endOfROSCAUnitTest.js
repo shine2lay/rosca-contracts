@@ -42,7 +42,9 @@ contract('end of ROSCA unit test', function(accounts) {
       // foreperson must wait another round before being able to get the surplus
       utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
 
-      let contractCredit = yield utils.contractNetCredit(rosca);
+      yield rosca.withdraw({from: accounts[1]}); // withdraw needs to be called for totalFees != 0
+
+      let contractCredit = yield utils.contractNetCredit(rosca, SERVICE_FEE_IN_THOUSANDTHS);
       assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
 
       let forepersonBalanceBefore = web3.eth.getBalance(accounts[0]);
@@ -51,10 +53,10 @@ contract('end of ROSCA unit test', function(accounts) {
 
       utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, contractCredit);
 
-      contractCredit = yield utils.contractNetCredit(rosca);
+      contractCredit = yield utils.contractNetCredit(rosca, SERVICE_FEE_IN_THOUSANDTHS);
       assert.equal(contractCredit, 0);
 
-      let totalFees = (yield rosca.totalFees.call()).toNumber();
+      let totalFees = (yield rosca.totalFees.call()).toNumber() / 1000 * SERVICE_FEE_IN_THOUSANDTHS;
       // accounts[9] is defined the fee collector in the contract.
       let feeCollectorBalanceBefore = web3.eth.getBalance(accounts[9]);
       yield rosca.endOfROSCARetrieveFees({from: accounts[9]});
@@ -67,10 +69,11 @@ contract('end of ROSCA unit test', function(accounts) {
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
       yield rosca.startRound();  // cleans up the last round
+      yield rosca.withdraw({from: accounts[1]}); // withdraw needs to be called for totalFees != 0
       // foreperson must wait another round before being able to get the surplus
       utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
 
-      let totalFees = (yield rosca.totalFees.call()).toNumber();
+      let totalFees = (yield rosca.totalFees.call()).toNumber() / 1000 * SERVICE_FEE_IN_THOUSANDTHS;
       // accounts[9] is defined the fee collector in the contract.
       let feeCollectorBalanceBefore = web3.eth.getBalance(accounts[9]);
       yield rosca.endOfROSCARetrieveFees({from: accounts[9]});

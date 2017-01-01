@@ -52,7 +52,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             fundsWithdrawalEvent.stopWatching();
             eventFired = true;
             assert.equal(log.args.user, accounts[0], "LogContributionMade doesn't display proper user value");
-            assert.equal(log.args.amount.toNumber(), ACTUAL_CONTRIBUTION / 1000 * (1000 - SERVICE_FEE_IN_THOUSANDTHS),
+            assert.equal(log.args.amount.toNumber(), ACTUAL_CONTRIBUTION,
                 "LogContributionMade doesn't display proper amount value");
         });
 
@@ -109,12 +109,12 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
-        let contractCredit = yield utils.contractNetCredit(rosca);
+        let contractCredit = yield utils.contractNetCredit(rosca, SERVICE_FEE_IN_THOUSANDTHS);
 
         assert.equal(contractCredit, 0);
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
         assert.equal(creditAfter, 
-        creditBefore - (withdrewAmount * 1000 / (1000 - SERVICE_FEE_IN_THOUSANDTHS)), 
+        creditBefore - withdrewAmount,
         "partial withdraw didn't work properly");
     }));
 
@@ -185,12 +185,12 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
-        let contractCredit = yield utils.contractNetCredit(rosca);
+        let contractCredit = yield utils.contractNetCredit(rosca, SERVICE_FEE_IN_THOUSANDTHS);
 
         assert.equal(contractCredit, 0);
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
         assert.equal(creditAfter.toNumber(), 
-            creditBefore - withdrewAmount * 1000 / (1000 - SERVICE_FEE_IN_THOUSANDTHS), 
+            creditBefore - withdrewAmount,
             "partial withdraw didn't work properly");
     }));
 
