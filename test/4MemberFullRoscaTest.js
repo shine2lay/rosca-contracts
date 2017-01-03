@@ -259,7 +259,6 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // Since contract's net balance (w/o fees) is only (2.496 - 0.0995)C == 2.3965,
     // p0's credit after withdraw should be 6.95C - 2.3965C / 99% == 4.52929292929 C
     let contractBalanceBefore = (yield getContractStatus()).balance;
-    let totalFees = (yield getContractStatus()).totalFees;
     yield withdraw(0);
 
     let contract = yield getContractStatus();

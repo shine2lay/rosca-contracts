@@ -81,7 +81,6 @@ contract ROSCA {
 
   struct User {
     uint256 credit;  // amount of funds user has contributed + winnings so far
-    uint128 fee; // amount of fee collected so far
     bool debt; // only used in case user won the pot while not in good standing
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
@@ -158,7 +157,7 @@ contract ROSCA {
 
   function addMember(address newMember) internal {
     if (members[newMember].alive) throw;
-    members[newMember] = User({paid: false , credit: 0, alive: true, debt: false, fee: 0});
+    members[newMember] = User({paid: false , credit: 0, alive: true, debt: false});
     membersAddresses.push(newMember);
   }
 
@@ -222,12 +221,11 @@ contract ROSCA {
     totalFees = currentRound * membersAddresses.length * contributionSize;
     for (uint16 j = 0; j < membersAddresses.length; j++) {
       uint256 credit = members[membersAddresses[j]].credit;
-      if (credit + discount < requiredContribution) {
-        if (members[membersAddresses[j]].debt) {
+      if (members[membersAddresses[j]].debt) {
           totalFees -= (currentRound + membersAddresses.length) * contributionSize - credit;
-        } else {
+          LogCannotWithdrawFully(totalFees, currentRound);
+      } else if (credit + discount < requiredContribution) {
           totalFees -= requiredContribution - credit;
-        }
       }
     }
     totalFees = totalFees / 1000 * serviceFeeInThousandths; // might be wrong

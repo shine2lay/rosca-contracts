@@ -56,8 +56,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             eventFired = true;
             let user = yield rosca.members.call(log.args.winnerAddress);
             assert.equal(accounts[1], log.args.winnerAddress);
-            assert.isOk(user[4], "chosen address is not a member"); // user.alive
-            assert.isOk(user[1], "Paid member was chosen"); // user.paid
+            assert.isOk(user[3], "chosen address is not a member"); // user.alive
+            assert.isOk(user[2], "Paid member was chosen"); // user.paid
             assert.equal(user[0].toString(), CONTRIBUTION_SIZE + BID_TO_PLACE); // user.credit
         }));
 
@@ -100,6 +100,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
         assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT,  // credit
             "lowestBid is not deposited into winner's credit"); // winner.credit
-        assert.isOk(winner[4], "a non member was chosen when there were no bids");
+        assert.isOk(winner[3], "a non member was chosen when there were no bids");
     }));
 });

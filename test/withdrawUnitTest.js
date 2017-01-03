@@ -239,7 +239,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
          let members = [accounts[1]];
          let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
              members, SERVICE_FEE_IN_THOUSANDTHS);
-         const BID_TO_PLACE = DEFAULT_POT * 0.80;
 
          utils.increaseTime(START_TIME_DELAY);
          yield Promise.all([
@@ -251,11 +250,11 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
          let eventFired = false;
          let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-         fundsReleasedEvent.watch(co(function* (error, log) {
+         fundsReleasedEvent.watch(function (error, log) {
              fundsReleasedEvent.stopWatching();
              eventFired = true;
              winnerAddress = log.args.winnerAddress;
-         }));
+         });
 
          utils.increaseTime(ROUND_PERIOD_DELAY);
          yield rosca.startRound();
