@@ -232,31 +232,40 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
     // This test does not pass with the current ROSCA.sol as the functionality has not been implemented.
     // TODO(shine): uncomment when in the PR upgrading ROSCA.sol.
-    // it("does not allow delinquent people to withdraw even after winning, unless they pay their dues",
-    //         co(function*() {
-    //     // In this 2-person rosca test, both p0 and p1 are delinquent and pay only 0.5C each in the first round.
-    //     // We check that the winner cannot withdraw their money in the next round, but once they pay up, they can.
-    //     let members = [accounts[1]];
-    //     let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-    //         members, SERVICE_FEE_IN_THOUSANDTHS);
+    it("does not allow delinquent people to withdraw even after winning, unless they pay their dues",
+            co(function*() {
+         // In this 2-person rosca test, both p0 and p1 are delinquent and pay only 0.5C each in the first round.
+         // We check that the winner cannot withdraw their money in the next round, but once they pay up, they can.
+         let members = [accounts[1]];
+         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+             members, SERVICE_FEE_IN_THOUSANDTHS);
+         const BID_TO_PLACE = DEFAULT_POT * 0.80;
 
-    //     const BID_TO_PLACE = DEFAULT_POT * 0.80;
+         utils.increaseTime(START_TIME_DELAY);
+         yield Promise.all([
+             rosca.startRound(),
+             rosca.contribute({from: accounts[1], value: 0.5 * CONTRIBUTION_SIZE}),
+             rosca.contribute({from: accounts[0], value: 0.5 * CONTRIBUTION_SIZE}),
+         ]);
+         let winnerAddress = 0;
 
-    //     utils.increaseTime(START_TIME_DELAY);
-    //     yield Promise.all([
-    //         rosca.startRound(),
-    //         rosca.contribute({from: accounts[1], value: 0.5 * CONTRIBUTION_SIZE}),
-    //         rosca.contribute({from: accounts[0], value: 0.5 * CONTRIBUTION_SIZE}),
-    //     ]);
+         let eventFired = false;
+         let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
+         fundsReleasedEvent.watch(co(function* (error, log) {
+             fundsReleasedEvent.stopWatching();
+             eventFired = true;
+             winnerAddress = log.args.winnerAddress;
+         }));
 
-    //     utils.increaseTime(ROUND_PERIOD_DELAY);
-    //     yield rosca.startRound();
+         utils.increaseTime(ROUND_PERIOD_DELAY);
+         yield rosca.startRound();
 
-    //     let winner = yield rosca.winnerAddress.call();
+         yield Promise.delay(300);
 
-    //     // Throws when delinquent, does not throw otherwise.
-    //     yield utils.assertThrows(rosca.withdraw({from: winner}));
-    //     yield rosca.contribute({from: winner, value: 1.5 * CONTRIBUTION_SIZE});
-    //     yield rosca.withdraw({from: winner});
-    // }));
+         assert.isOk(eventFired, "Fundreleased event did not occured");
+         // Throws when delinquent, does not throw otherwise.
+         yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
+         yield rosca.contribute({from: winnerAddress, value: 1.5 * CONTRIBUTION_SIZE});
+         yield rosca.withdraw({from: winnerAddress});
+    }));
 });

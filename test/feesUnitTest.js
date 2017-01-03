@@ -158,7 +158,7 @@ contract('fees unit test', function(accounts_) {
   //   assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
   // }));
 
-  it('does not charge fees from contributions not covered because of delinquencies', co(function* () {
+  /*it('does not charge fees from contributions not covered because of delinquencies', co(function* () {
     // In this test, accounts[0] contributes 0.5C in round 1, and another 1C in round 2.
     utils.increaseTime(START_TIME_DELAY + 200);
     yield Promise.all([
@@ -178,7 +178,7 @@ contract('fees unit test', function(accounts_) {
 
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * (2 + 1.5)));  // 2 rounds, in one there is delinquency
-  }));
+  }));*/
 });
 
 

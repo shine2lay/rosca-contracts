@@ -81,7 +81,8 @@ contract ROSCA {
 
   struct User {
     uint256 credit;  // amount of funds user has contributed so far
-    uint256 debt; // only used in case user won the pot while not in good standing
+    uint128 fee; // amount of fee collected so far
+    bool debt; // only used in case user won the pot while not in good standing
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
   }
@@ -157,7 +158,7 @@ contract ROSCA {
 
   function addMember(address newMember) internal {
     if (members[newMember].alive) throw;
-    members[newMember] = User({paid: false , credit: 0, alive: true, debt: 0});
+    members[newMember] = User({paid: false , credit: 0, alive: true, debt: false, fee: 0});
     membersAddresses.push(newMember);
   }
 
@@ -207,7 +208,8 @@ contract ROSCA {
     }
     totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
     if (winnerAddress == lastUnpaid) {
-      members[winnerAddress].debt = currentRound * contributionSize - (members[winnerAddress].credit + totalDiscounts / membersAddresses.length);
+      members[winnerAddress].debt = true;
+      //members[winnerAddress].debt = currentRound * contributionSize - (members[winnerAddress].credit + totalDiscounts / membersAddresses.length);
     }
     members[winnerAddress].credit += lowestBid;
     members[winnerAddress].paid = true;
@@ -234,8 +236,11 @@ contract ROSCA {
    */
   function contribute() payable onlyFromMember onlyIfEscapeHatchInactive external {
     members[msg.sender].credit += msg.value;
-    if (members[msg.sender].debt > 0) {
-      members[msg.sender].debt = members[msg.sender].debt > msg.value ? members[msg.sender].debt - msg.value : 0;
+    if (members[msg.sender].debt) {
+      if (members[msg.sender].credit + totalDiscounts / membersAddresses.length >= (currentRound + membersAddresses.length) * contributionSize) {
+          members[msg.sender].debt = false;
+      }
+      // members[msg.sender].debt = members[msg.sender].debt > msg.value ? members[msg.sender].debt - msg.value : 0;
     }
 
     LogContributionMade(msg.sender, msg.value);
@@ -279,10 +284,13 @@ contract ROSCA {
    * sends the fund to that address, otherwise sends to msg.sender.
    */
   function withdraw() onlyFromMember onlyIfEscapeHatchInactive external returns(bool success) {
-    uint256 totalCredit = members[msg.sender].debt > 0 ? members[msg.sender].credit : members[msg.sender].credit + totalDiscounts / membersAddresses.length;
+    if (members[msg.sender].debt) {
+      throw;
+    }
+    uint256 totalCredit = members[msg.sender].credit + totalDiscounts / membersAddresses.length;
     // if member is in debt, use epoch size as totalDebit, this allows the user to retrieve the amount contributed only
     // winnings won't be a part of withdrawal
-    uint256 totalDebit = members[msg.sender].debt > 0 ? membersAddresses.length * contributionSize : currentRound * contributionSize;
+    uint256 totalDebit = currentRound * contributionSize;
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
 
     uint256 amountToWithdraw = totalCredit - totalDebit;
