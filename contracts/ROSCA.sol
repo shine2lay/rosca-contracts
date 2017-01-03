@@ -22,10 +22,16 @@ contract ROSCA {
   uint8 constant internal MIN_ROUND_PERIOD_IN_DAYS = 1;
   uint8 constant internal MAX_ROUND_PERIOD_IN_DAYS = 30;
   uint8 constant internal MIN_DISTRIBUTION_PERCENT = 65;  // the winning bid must be at least 65% of the Pot value
-  
+
   uint8 constant internal MAX_NEXT_BID_RATIO = 98;  // Means every new bid has to be at least 2% less than the one before
 
-  address constant internal WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
+  // TODO: MUST change this prior to production. Currently this is accounts[9] of the testrpc config
+  // used in tests.
+  address constant internal FEE_ADDRESS = 0x1df62f291b2e969fb0849d99d9ce41e2f137006e;
+
+  // TODO(ron): replace this with an actual wallet. Right now this is accounts[9] of the testrpc used
+  // by tests.
+  address constant internal ESCAPE_HATCH_ENABLER = 0x1df62f291b2e969fb0849d99d9ce41e2f137006e;
 
   event LogContributionMade(address user, uint256 amount);
   event LogStartOfRound(uint256 currentRound);
@@ -35,6 +41,11 @@ contract ROSCA {
   event LogFundsWithdrawal(address user, uint256 amount);
   event LogCannotWithdrawFully(uint256 requestedAmount,uint256 contractBalance);
   event LogUnsuccessfulBid(address bidder,uint256 bidInWei,uint256 lowestBid);
+
+  // Escape hatch related events.
+  event LogEscapeHatchEnabled();
+  event LogEscapeHatchActivated();
+  event LogEmergencyWithdrawalPerformed(uint256 fundsDispersed);
 
   // ROSCA parameters
   uint16 internal roundPeriodInDays;
@@ -46,7 +57,9 @@ contract ROSCA {
 
   // ROSCA state
   bool internal endOfROSCA = false;
+  bool internal forepersonSurplusCollected = false;
   uint256 internal totalDiscounts; // a discount is the difference between a winning bid and the pot value
+  uint256 internal totalFees = 0;
 
   // Round state
   uint256 internal lowestBid;
@@ -55,8 +68,21 @@ contract ROSCA {
   mapping(address => User) internal members;
   address[] internal membersAddresses;    // for  iterating through members' addresses
 
+  // Other state
+  // An escape hatch is used in case a major vulnerability is discovered in the contract code.
+  // The following procedure is then put into action:
+  // 1. WeTrust sends a transaction to make escapeHatchEnabled true.
+  // 2. foreperson is notified and can decide to activate the escapeHatch.
+  // 3. If escape hatch is activated, no contributions and/or withdrawals are allowed. The foreperson
+  //    may call withdraw() to withdraw all of the contract's funds and then disperse them offline
+  //    among the participants.
+  bool internal escapeHatchEnabled = false;
+  bool internal escapeHatchActive = false;
+
   struct User {
-    uint256 credit;  // amount of funds user has contributed so far
+    uint256 credit;  // amount of funds user has contributed + winnings so far
+    uint128 fee; // amount of fee collected so far
+    bool debt; // only used in case user won the pot while not in good standing
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
   }
@@ -71,6 +97,11 @@ contract ROSCA {
     _;
   }
 
+  modifier onlyFromFeeAddress {
+    if (msg.sender != FEE_ADDRESS) throw;
+    _;
+  }
+
   modifier roscaNotEnded {
     if (endOfROSCA) throw;
     _;
@@ -78,6 +109,21 @@ contract ROSCA {
 
   modifier roscaEnded {
     if (!endOfROSCA) throw;
+    _;
+  }
+
+  modifier onlyIfEscapeHatchActive {
+    if (!escapeHatchActive) throw;
+    _;
+  }
+
+  modifier onlyIfEscapeHatchInactive {
+    if (escapeHatchActive) throw;
+    _;
+  }
+
+  modifier onlyFromEscapeHatchEnabler {
+    if (msg.sender != ESCAPE_HATCH_ENABLER) throw;
     _;
   }
 
@@ -112,7 +158,7 @@ contract ROSCA {
 
   function addMember(address newMember) internal {
     if (members[newMember].alive) throw;
-    members[newMember] = User({paid: false , credit: 0, alive: true});
+    members[newMember] = User({paid: false , credit: 0, alive: true, debt: false, fee: 0});
     membersAddresses.push(newMember);
   }
 
@@ -140,28 +186,51 @@ contract ROSCA {
   }
 
   function cleanUpPreviousRound() internal {
+    address delinquentWinner = 0x0;
     if (winnerAddress == 0) {
       // There is no bid in this round. Find an unpaid address for this epoch.
+      // give priority to member in good standing
       uint256 semi_random = now % membersAddresses.length;
       for (uint16 i = 0; i < membersAddresses.length; i++) {
         address candidate = membersAddresses[(semi_random + i) % membersAddresses.length];
-        if (!members[candidate].paid &&
-            members[candidate].credit + (totalDiscounts / membersAddresses.length) >= (currentRound * contributionSize)) { // check if the member is in good standing
-          winnerAddress = candidate;
-          break;
+        if (!members[candidate].paid) {
+          if (members[candidate].credit + (totalDiscounts / membersAddresses.length) >= (currentRound * contributionSize)) {
+            winnerAddress = candidate;
+            break;
+          }
+          delinquentWinner = candidate;
         }
+      }
+      if (winnerAddress == 0) {
+        winnerAddress = delinquentWinner;
       }
       // Also - set lowestBid to the right value.
       lowestBid = contributionSize * membersAddresses.length;
     }
-    if (winnerAddress == 0) { // no potential winner
-      LogRoundNoWinner(currentRound);
-    } else {
-      totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
-      members[winnerAddress].credit += lowestBid - ((lowestBid / 1000) * serviceFeeInThousandths);
-      members[winnerAddress].paid = true;
-      LogRoundFundsReleased(winnerAddress, lowestBid);
+    totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
+    if (winnerAddress == delinquentWinner) {
+      members[winnerAddress].debt = true;
+      // members[winnerAddress].debt = currentRound * contributionSize - (members[winnerAddress].credit + totalDiscounts / membersAddresses.length);
     }
+    members[winnerAddress].credit += lowestBid;
+    members[winnerAddress].paid = true;
+    LogRoundFundsReleased(winnerAddress, lowestBid);
+
+    // ReCalculate totalFees
+    uint256 discount = totalDiscounts / membersAddresses.length;
+    uint256 requiredContribution = currentRound * contributionSize;
+    totalFees = currentRound * membersAddresses.length * contributionSize;
+    for (uint16 j = 0; j < membersAddresses.length; j++) {
+      uint256 credit = members[membersAddresses[j]].credit;
+      if (credit + discount < requiredContribution) {
+        if (members[membersAddresses[j]].debt) {
+          totalFees -= (currentRound + membersAddresses.length) * contributionSize - credit;
+        } else {
+          totalFees -= requiredContribution - credit;
+        }
+      }
+    }
+    totalFees = totalFees / 1000 * serviceFeeInThousandths; // might be wrong
   }
 
   /**
@@ -170,8 +239,14 @@ contract ROSCA {
    *
    * Any excess funds are withdrawable through withdraw().
    */
-  function contribute() payable onlyFromMember external {
+  function contribute() payable onlyFromMember onlyIfEscapeHatchInactive external {
     members[msg.sender].credit += msg.value;
+    if (members[msg.sender].debt) {
+      if (members[msg.sender].credit + totalDiscounts / membersAddresses.length >= (currentRound + membersAddresses.length) * contributionSize) {
+          members[msg.sender].debt = false;
+      }
+      // members[msg.sender].debt = members[msg.sender].debt > msg.value ? members[msg.sender].debt - msg.value : 0;
+    }
 
     LogContributionMade(msg.sender, msg.value);
   }
@@ -184,7 +259,7 @@ contract ROSCA {
    *   plus earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
-  function bid(uint256 bidInWei) external {
+  function bid(uint256 bidInWei) onlyIfEscapeHatchInactive external {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing
@@ -192,11 +267,11 @@ contract ROSCA {
         // bid is less than minimum allowed
         bidInWei < ((contributionSize * membersAddresses.length) / 100) * MIN_DISTRIBUTION_PERCENT)
       throw;
-    
+
     // If winnerAddress is 0, this is the first bid, hence allow full pot.
     // Otherwise, make sure bid is lower enough compared to previous bid.
-    uint256 maxAllowedBid = (winnerAddress == 0 ? 
-        contributionSize * membersAddresses.length : 
+    uint256 maxAllowedBid = (winnerAddress == 0 ?
+        contributionSize * membersAddresses.length :
         lowestBid / 100 * MAX_NEXT_BID_RATIO);
     if (bidInWei > maxAllowedBid) {
       // We don't throw as this may be hard for the frontend to predict on the
@@ -213,40 +288,104 @@ contract ROSCA {
    * Withdraws available funds for msg.sender. If opt_destination is nonzero,
    * sends the fund to that address, otherwise sends to msg.sender.
    */
-  function withdraw() onlyFromMember external returns(bool success) {
+  function withdraw() onlyFromMember onlyIfEscapeHatchInactive external returns(bool success) {
+    if (members[msg.sender].debt) {
+      throw;
+    }
     uint256 totalCredit = members[msg.sender].credit + totalDiscounts / membersAddresses.length;
+    // if member is in debt, use epoch size as totalDebit, this allows the user to retrieve the amount contributed only
+    // winnings won't be a part of withdrawal
     uint256 totalDebit = currentRound * contributionSize;
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
-    uint256 amountToWithdraw = totalCredit - totalDebit;
 
-    if (this.balance < amountToWithdraw) {
-      LogCannotWithdrawFully(amountToWithdraw, this.balance);
-      amountToWithdraw = this.balance;  // Let user withdraw the funds into a safe place
+    uint256 amountToWithdraw = totalCredit - totalDebit;
+    uint256 amountAfterFee = amountToWithdraw / 1000 * (1000 - serviceFeeInThousandths);
+
+    uint256 amountAvailable = this.balance - totalFees;
+    if (amountAvailable < amountAfterFee) {
+      // This may happen if some participants are delinquent.
+      amountAfterFee = amountAvailable;
+      LogCannotWithdrawFully(amountToWithdraw, amountAvailable);
+      amountToWithdraw = amountAvailable * 1000 / (1000 - serviceFeeInThousandths);
     }
     members[msg.sender].credit -= amountToWithdraw;
-    if (!msg.sender.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
+    if (!msg.sender.send(amountAfterFee)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
       members[msg.sender].credit += amountToWithdraw;
       return false;
     }
-    LogFundsWithdrawal(msg.sender, amountToWithdraw);
+    LogFundsWithdrawal(msg.sender, amountAfterFee);
     return true;
   }
 
   /**
-   * Allows the foreperson to end the ROSCA and retrieve any surplus funds, one 
+   * Allows the foreperson to end the ROSCA and retrieve any surplus funds, one
    * roundPeriodInDays after the end of the ROSCA.
-   * The contract is deleted from the blockchain at this stage.
    *
    * Note that startRound() must be called first after the last round, as it
    * does the bookeeping of that round.
-   * 
-   * TODO(ron): change this logic once we introduce fees.
    */
-  function endROSCARetrieveFunds() onlyFromForeperson roscaEnded external {
+  function endOfROSCARetrieveSurplus() onlyFromForeperson roscaEnded external returns (bool) {
     uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
-    if (now < roscaCollectionTime) throw;
+    if (now < roscaCollectionTime || forepersonSurplusCollected) throw;
+
+    forepersonSurplusCollected = true;
+    uint256 amountToCollect = this.balance - totalFees;
+    if (!foreperson.send(amountToCollect)) {   // if the send() fails, put the allowance back to its original place
+      // No need to call throw here, just reset the amount owing. This may happen
+      // for nonmalicious reasons, e.g. the receiving contract running out of gas.
+      forepersonSurplusCollected = false;
+      return false;
+    } else {
+      LogFundsWithdrawal(foreperson, amountToCollect);
+    }
+  }
+
+ /**
+   * Allows the foreperson to end the ROSCA and retrieve any surplus funds, one
+   * roundPeriodInDays after the end of the ROSCA.
+   *
+   * Note that startRound() must be called first after the last round, as it
+   * does the bookeeping of that round.
+   */
+  function endOfROSCARetrieveFees() onlyFromFeeAddress roscaEnded external returns (bool) {
+    uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
+    if (now < roscaCollectionTime || totalFees == 0) throw;
+
+    uint256 tempTotalFees = totalFees;  // prevent re-entry.
+    totalFees = 0;
+    if (!FEE_ADDRESS.send(tempTotalFees)) {   // if the send() fails, put the allowance back to its original place
+      // No need to call throw here, just reset the amount owing. This may happen
+      // for nonmalicious reasons, e.g. the receiving contract running out of gas.
+      totalFees = tempTotalFees;
+      return false;
+    } else {
+      LogFundsWithdrawal(FEE_ADDRESS, totalFees);
+    }
+  }
+
+  // Allows the Escape Hatch Enabler (controlled by WeTrust) to enable the Escape Hatch in case of
+  // emergency (e.g. a major vulnerability found in the contract).
+  function enableEscapeHatch() onlyFromEscapeHatchEnabler external {
+    escapeHatchEnabled = true;
+    LogEscapeHatchEnabled();
+  }
+
+  // Allows the foreperson to active the Escape Hatch after the Enabled enabled it. This will freeze all
+  // contributions and withdrawals, and allow the foreperson to retrieve all funds into their own account,
+  // to be dispersed offline to the other participants.
+  function activateEscapeHatch() onlyFromForeperson external {
+    if (!escapeHatchEnabled) {
+      throw;
+    }
+    escapeHatchActive = true;
+    LogEscapeHatchActivated();
+  }
+
+  function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive {
+    LogEmergencyWithdrawalPerformed(this.balance);
+    // Send everything, including potential fees, to foreperson to disperse offline to participants.
     selfdestruct(foreperson);
   }
 }
