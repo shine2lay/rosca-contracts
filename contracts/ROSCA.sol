@@ -210,7 +210,7 @@ contract ROSCA {
     totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
     if (winnerAddress == delinquentWinner) {
       members[winnerAddress].debt = true;
-      //members[winnerAddress].debt = currentRound * contributionSize - (members[winnerAddress].credit + totalDiscounts / membersAddresses.length);
+      // members[winnerAddress].debt = currentRound * contributionSize - (members[winnerAddress].credit + totalDiscounts / membersAddresses.length);
     }
     members[winnerAddress].credit += lowestBid;
     members[winnerAddress].paid = true;
@@ -218,13 +218,16 @@ contract ROSCA {
 
     // ReCalculate totalFees
     uint256 discount = totalDiscounts / membersAddresses.length;
+    uint256 requiredContribution = currentRound * contributionSize;
     totalFees = currentRound * membersAddresses.length * contributionSize;
     for (uint16 j = 0; j < membersAddresses.length; j++) {
       uint256 credit = members[membersAddresses[j]].credit;
-      uint256 requiredContribution = currentRound * contributionSize;
       if (credit + discount < requiredContribution) {
-          if (members[membersAddresses[j]].debt)
-        totalFees -= requiredContribution - credit;
+        if (members[membersAddresses[j]].debt) {
+          totalFees -= (currentRound + membersAddresses.length) * contributionSize - credit;
+        } else {
+          totalFees -= requiredContribution - credit;
+        }
       }
     }
     totalFees = totalFees / 1000 * serviceFeeInThousandths; // might be wrong

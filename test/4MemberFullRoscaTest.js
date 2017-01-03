@@ -139,7 +139,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // Expected balance is thus 13.2C - 0.09C +  == 4.29C.
     assert.equal(contract.balance, 4.29 * CONTRIBUTION_SIZE);
     // Total fees as of now is deducted from total contributions which are 1% of (10 + 1 + 1.2 + 1)C == 0.132C.
-    assert.equal(contract.totalFees, MEMBER_COUNT * CONTRIBUTION_SIZE * (contract.currentRound - 1) / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assert.equal(contract.totalFees, MEMBER_COUNT * CONTRIBUTION_SIZE * (contract.currentRound - 1)
+        / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
 
 
     assert.equal(contract.currentRound, 2); // currentRound value
@@ -194,8 +195,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // Thus we expect credit to be (4.29 + 0.8 + 0.95 - 2.8215)C == 3.25612C
     assert.equal(contract.balance, 3.2185 * CONTRIBUTION_SIZE);
     // totalFees == 2 * 4 = 8 - 1 (1 person didn't contribute) = 0.07C;
-    assert.isAtMost(contract.totalFees, (MEMBER_COUNT * CONTRIBUTION_SIZE * (contract.currentRound -1) - CONTRIBUTION_SIZE)
-      / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assert.isAtMost(contract.totalFees, (MEMBER_COUNT * CONTRIBUTION_SIZE *
+        (contract.currentRound -1) - CONTRIBUTION_SIZE) / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
     assert.equal(contract.currentRound, 3); // currentRound value
     assert.isNotOk(yield rosca.endOfROSCA.call());
   }));
@@ -241,8 +242,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // Last we checked contractBalance (in this test) it was 0.496C. With 2 contributions of C each, we get to 2.424C.
     assert.equal(contract.balance, 2.496 * CONTRIBUTION_SIZE);
     // totalFees == 3 * 4 = 12 - 1(p2) - 1(p3) = 10C == 0.1 C
-    assert.isAtMost(contract.totalFees, (MEMBER_COUNT * CONTRIBUTION_SIZE * (contract.currentRound -1) - 2 * CONTRIBUTION_SIZE)
-        / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assert.isAtMost(contract.totalFees, (MEMBER_COUNT * CONTRIBUTION_SIZE *
+        (contract.currentRound -1) - 2 * CONTRIBUTION_SIZE) / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
 
     assert.equal(contract.currentRound, 4); // currentRound value
     assert.isNotOk(yield rosca.endOfROSCA.call());
@@ -303,8 +304,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assertWeiCloseTo(contract.balance, 2.0995 * CONTRIBUTION_SIZE);
 
     // totalFees = 4 * 4 = 16 - 2(p2) = 14C  == 0.14C
-    assert.isAtMost(contract.totalFees, (MEMBER_COUNT * CONTRIBUTION_SIZE * contract.currentRound - 2 * CONTRIBUTION_SIZE)
-        / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assert.isAtMost(contract.totalFees, MEMBER_COUNT * CONTRIBUTION_SIZE * (contract.currentRound - 2) *
+        CONTRIBUTION_SIZE / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
 
     assert.equal(contract.currentRound, 4); // currentRound value
     // End of Rosca has been reached
