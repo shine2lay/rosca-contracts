@@ -80,7 +80,7 @@ contract ROSCA {
   bool internal escapeHatchActive = false;
 
   struct User {
-    uint256 credit;  // amount of funds user has contributed so far
+    uint256 credit;  // amount of funds user has contributed + winnings so far
     uint128 fee; // amount of fee collected so far
     bool debt; // only used in case user won the pot while not in good standing
     bool paid; // yes if the member had won a Round
@@ -186,9 +186,10 @@ contract ROSCA {
   }
 
   function cleanUpPreviousRound() internal {
-    address lastUnpaid = 0x0;
+    address delinquentWinner = 0x0;
     if (winnerAddress == 0) {
       // There is no bid in this round. Find an unpaid address for this epoch.
+      // give priority to member in good standing
       uint256 semi_random = now % membersAddresses.length;
       for (uint16 i = 0; i < membersAddresses.length; i++) {
         address candidate = membersAddresses[(semi_random + i) % membersAddresses.length];
@@ -197,17 +198,17 @@ contract ROSCA {
             winnerAddress = candidate;
             break;
           }
-          lastUnpaid = candidate;
+          delinquentWinner = candidate;
         }
       }
       if (winnerAddress == 0) {
-        winnerAddress = lastUnpaid;
+        winnerAddress = delinquentWinner;
       }
       // Also - set lowestBid to the right value.
       lowestBid = contributionSize * membersAddresses.length;
     }
     totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
-    if (winnerAddress == lastUnpaid) {
+    if (winnerAddress == delinquentWinner) {
       members[winnerAddress].debt = true;
       //members[winnerAddress].debt = currentRound * contributionSize - (members[winnerAddress].credit + totalDiscounts / membersAddresses.length);
     }
@@ -216,12 +217,13 @@ contract ROSCA {
     LogRoundFundsReleased(winnerAddress, lowestBid);
 
     // ReCalculate totalFees
+    uint256 discount = totalDiscounts / membersAddresses.length;
     totalFees = currentRound * membersAddresses.length * contributionSize;
     for (uint16 j = 0; j < membersAddresses.length; j++) {
       uint256 credit = members[membersAddresses[j]].credit;
-      uint256 discount = totalDiscounts / membersAddresses.length;
       uint256 requiredContribution = currentRound * contributionSize;
-      if ( credit + discount < requiredContribution) {
+      if (credit + discount < requiredContribution) {
+          if (members[membersAddresses[j]].debt)
         totalFees -= requiredContribution - credit;
       }
     }
