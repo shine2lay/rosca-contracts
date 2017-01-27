@@ -6,7 +6,7 @@ pragma solidity ^0.4.4;
  * A ROSCA (Rotating and Savings Credit Association) is an agreement between
  * trusted friends to contribute funds on a periodic basis to a "pot", and in
  * each round one of the participants receives the pot (termed "winner").
- * The winner is selected as the person who makes the lowest bit in that round
+ * The winner is selected as the person who makes the lowest bid in that round
  * among those who have not won a bid before.
  * The discount (gap between bid and total round contributions) is dispersed
  * evenly between the participants.
@@ -81,14 +81,14 @@ contract ROSCA {
   bool internal forepersonSurplusCollected = false;
   // A discount is the difference between a winning bid and the pot value. totalDiscounts is the amount
   // of discounts accumulated so far, divided by the number of ROSCA participants.
-  uint256 internal totalDiscounts;
+  uint256 internal totalDiscounts = 0;
 
   // Amount of fees reserved in the contract for fees.
   uint256 internal totalFees = 0;
 
   // Round state variables
-  uint256 internal lowestBid;
-  address internal winnerAddress;  // bidder who bid the lowest so far
+  uint256 internal lowestBid = 0;
+  address internal winnerAddress = 0;  // bidder who bid the lowest so far
 
   mapping(address => User) internal members;
   address[] internal membersAddresses;  // for iterating through members' addresses
@@ -105,7 +105,7 @@ contract ROSCA {
   bool internal escapeHatchActive = false;
 
   struct User {
-    uint256 credit;  // amount of funds user has contributed + winnings (not including discounts) so far
+    uint256 credit;  // amount of funds user has contributed - winnings (not including discounts) so far
     bool debt; // true if user won the pot while not in good standing and is still not in good standing
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
@@ -246,15 +246,20 @@ contract ROSCA {
 
   function cleanUpPreviousRound() internal {
     address delinquentWinner = 0x0;
+    uint256 winnerIndex;
+    bool winnerSelectedThroughBid = (winnerAddress != 0);
+    uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
     if (winnerAddress == 0) {
       // There was no bid in this round. Find an unpaid address for this epoch.
       // Give priority to members in good standing (not delinquent).
       // Note this randomness does not require high security, that's why we feel ok with using the block's timestamp.
       // Everyone will be paid out eventually.
-      uint256 semi_random = now % membersAddresses.length;
-      for (uint16 i = 0; i < membersAddresses.length; i++) {
-        address candidate = membersAddresses[(semi_random + i) % membersAddresses.length];
+      uint256 semi_random = now % numUnpaidParticipants;
+      for (uint16 i = 0; i < numUnpaidParticipants; i++) {
+        uint256 index = (semi_random + i) % numUnpaidParticipants;
+        address candidate = membersAddresses[index];
         if (!members[candidate].paid) {
+          winnerIndex = index;
           if (members[candidate].credit + totalDiscounts >= (currentRound * contributionSize)) {
             // We found a non-delinquent winner.
             winnerAddress = candidate;
@@ -263,18 +268,21 @@ contract ROSCA {
           delinquentWinner = candidate;
         }
       }
-      if (winnerAddress == 0) {
+      if (winnerAddress == 0) {  // we did not find any non-delinquent winner.
         winnerAddress = delinquentWinner;
+        // Set the flag to true so we know this user cannot withdraw until debt has been paid.
+        members[winnerAddress].debt = true;
       }
       // Set lowestBid to the right value since there was no winning bid.
       lowestBid = contributionSize * membersAddresses.length;
     }
+    // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
+    // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
+    // next unpaid member).
+    swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
+
     uint256 currentRoundTotalDiscounts = removeFees(contributionSize * membersAddresses.length - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
-    if (winnerAddress == delinquentWinner) {
-      // Set the flag ot true so we know this user cannot withdraw until debt has been paid.
-      members[winnerAddress].debt = true;
-    }
     members[winnerAddress].credit += removeFees(lowestBid);
     members[winnerAddress].paid = true;
     LogRoundFundsReleased(winnerAddress, lowestBid);
@@ -297,10 +305,28 @@ contract ROSCA {
       if (credit + totalDiscounts < debit) {
         grossTotalFees -= debit - credit - totalDiscounts;
       }
-      uint256 delinquency = requiredContributions - credit - totalDiscounts;
     }
 
     totalFees = grossTotalFees * serviceFeeInThousandths / 1000;
+  }
+
+  // Swaps membersAddresses[winnerIndex] with membersAddresses[indexToSwap]. However,
+  // if winner was selected through a bid, winnerIndex was not set, and we find it first.
+  function swapWinner(
+    uint256 winnerIndex, bool winnerSelectedThroughBid, uint256 indexToSwap) internal {
+    if (winnerSelectedThroughBid) {
+      // Since winner was selected through a bid, we were not able to set winnerIndex, so search
+      // for the winner among the unpaid participants.
+      for (uint16 i = 0; i <= indexToSwap; i++) {
+        if (membersAddresses[i] == winnerAddress) {
+          winnerIndex = i;
+          break;
+        }
+      }
+    }
+    // We now want to swap winnerIndex with indexToSwap, but we already know membersAddresses[winnerIndex] == winnerAddress.
+    membersAddresses[winnerIndex] = membersAddresses[indexToSwap];
+    membersAddresses[indexToSwap] = winnerAddress;
   }
 
   // Calculates the specified amount net amount after fees.
@@ -340,7 +366,7 @@ contract ROSCA {
    *   plus any past earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
-  function bid(uint256 bidInWei) onlyIfEscapeHatchInactive external {
+  function bid(uint256 bidInWei) onlyFromMember roscaNotEnded onlyIfEscapeHatchInactive external {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing
