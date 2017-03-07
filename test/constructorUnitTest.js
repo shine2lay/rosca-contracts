@@ -4,6 +4,9 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
+let ROSCA = artifacts.require("./ROSCA.sol")
+let ROSCATest = artifacts.require("./ROSCATest.sol")
+
 contract('ROSCA constructor Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
     const ROUND_PERIOD_IN_DAYS = 3;
@@ -19,7 +22,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
-        let deployed = ROSCATest.deployed();
+        let deployed = yield ROSCATest.deployed();
         const MIN_ROUND_PERIOD = yield deployed.MIN_ROUND_PERIOD_IN_DAYS.call();
         yield utils.assertThrows(ROSCATest.new(
             MIN_ROUND_PERIOD.sub(1), CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
@@ -32,7 +35,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
-        let deployed = ROSCATest.deployed();
+        let deployed = yield ROSCATest.deployed();
         const MAX_ROUND_PERIOD = yield deployed.MAX_ROUND_PERIOD_IN_DAYS.call();
 
         yield utils.assertThrows(ROSCATest.new(
@@ -46,7 +49,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
-        let deployed = ROSCATest.deployed();
+        let deployed = yield ROSCATest.deployed();
         const MIN_CONTRIBUTION_SIZE = yield deployed.MIN_CONTRIBUTION_SIZE.call();
 
         yield utils.assertThrows(ROSCATest.new(
@@ -60,7 +63,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
-        let deployed = ROSCATest.deployed();
+        let deployed = yield ROSCATest.deployed();
         let MAX_CONTRIBUTION_SIZE = yield deployed.MAX_CONTRIBUTION_SIZE.call();
 
         yield utils.assertThrows(ROSCATest.new(
@@ -74,7 +77,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
-        let deployed = ROSCATest.deployed();
+        let deployed = yield ROSCATest.deployed();
         let MINIMUM_TIME_BEFORE_ROSCA_START = (yield deployed.MINIMUM_TIME_BEFORE_ROSCA_START.call()).toNumber();
 
         yield utils.assertThrows(ROSCATest.new(
@@ -88,7 +91,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
-        let deployed = ROSCATest.deployed();
+        let deployed = yield ROSCATest.deployed();
         let MAX_FEE = yield deployed.MAX_FEE_IN_THOUSANDTHS.call();
 
         yield utils.assertThrows(ROSCATest.new(

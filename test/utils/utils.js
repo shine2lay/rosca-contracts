@@ -4,6 +4,8 @@ let assert = require('chai').assert;
 let consts = require("./consts.js");
 let Promise = require("bluebird");
 
+let ROSCATest = artifacts.require("./ROSCATest.sol")
+
 // we need this becaues test env is different than script env
 let myWeb3 = (typeof web3 === undefined ? undefined : web3);
 

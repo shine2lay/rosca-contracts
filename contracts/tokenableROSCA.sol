@@ -11,7 +11,7 @@ pragma solidity ^0.4.4;
  * The discount (gap between bid and total round contributions) is dispersed
  * evenly between the participants.
  */
-contract ROSCA {
+contract tokenableROSCA {
 
   ////////////
   // CONSTANTS

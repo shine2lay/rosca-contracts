@@ -5,6 +5,8 @@ let assert = require('chai').assert;
 let co = require('co').wrap;
 let utils = require('./utils/utils.js');
 
+let ROSCATest = artifacts.require("./ROSCATest.sol")
+
 let accounts;
 let rosca;
 

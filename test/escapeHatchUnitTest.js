@@ -4,6 +4,8 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
+let ROSCATest = artifacts.require("./ROSCATest.sol")
+
 contract('Escape Hatch unit test', function(accounts) {
   const START_TIME_DELAY = 86400 + 10;
   const TIME_TO_WAIT_FOR_ROSCA_TO_START = START_TIME_DELAY + 10;

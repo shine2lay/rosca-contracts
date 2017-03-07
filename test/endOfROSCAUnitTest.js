@@ -5,6 +5,8 @@ let co = require("co").wrap;
 let Promise = require("bluebird");
 let utils = require("./utils/utils.js");
 
+let ROSCATest = artifacts.require("./ROSCATest.sol")
+
 contract('end of ROSCA unit test', function(accounts) {
     const START_TIME_DELAY = 86400 + 10;
     const TIME_TO_WAIT_FOR_ROSCA_TO_START = START_TIME_DELAY + 10;

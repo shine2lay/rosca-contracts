@@ -1,5 +1,7 @@
 "use strict";
 
+let ROSCATest = artifacts.require("./ROSCATest.sol")
+
 let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;

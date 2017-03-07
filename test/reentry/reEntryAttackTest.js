@@ -5,6 +5,9 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("../utils/utils.js");
 
+let TestReEntryAttack = artifacts.require("./TestReEntryAttack.sol")
+let ROSCATest = artifacts.require("./ROSCATest.sol")
+
 contract('ROSCA reentry attack test', function(accounts) {
   // Parameters for new ROSCA creation
   const ROUND_PERIOD_IN_DAYS = 3;
@@ -58,7 +61,7 @@ contract('ROSCA reentry attack test', function(accounts) {
     });
     // Try to attack
     yield attackContract.withdrawTwice();
-    yield Promise.delay(300); // 300ms delay to allow the event to fire properly
+    yield Promise.delay(1000); // 300ms delay to allow the event to fire properly
     // Check that withdraw was tried out, returned false, and no money was transferred.
     assert.isOk(eventFired);
     assert.isNotOk(withdrawSuccessful);

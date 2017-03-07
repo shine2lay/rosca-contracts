@@ -9,9 +9,12 @@ module.exports = {
     ],
     "images/": "images/"
   },
-  rpc: {
-    host: "localhost",
-    port: 8545,
-    gasPrice: 2e10  // keep in sync with test/utils/consts.js
+  networks: {
+    development: {
+      host: "localhost",
+      port: 8545,
+      network_id: "*", // Match any network id
+      gasPrice: 2e10
+    }
   }
 };
