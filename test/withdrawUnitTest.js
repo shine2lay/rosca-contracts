@@ -8,21 +8,20 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts')
+let roscas
+let rosca
 
 contract('ROSCA withdraw Unit Test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
     })
 
-    let createETHandERC20Roscas = co(function* () {
-      let ethRosca = yield utils.createEthROSCA();
-      let erc20Rosca = yield utils.createERC20ROSCA(accounts);
-      return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
-    });
+    beforeEach(co(function* () {
+      roscas = yield utils.createETHandERC20Roscas(accounts);
+      rosca = yield utils.createEthROSCA()
+    }))
 
     it("Throws when calling withdraw from a non-member", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         yield Promise.all([
             rosca.contribute({from: accounts[0], value: consts.CONTRIBUTION_SIZE}),
             rosca.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE}),
@@ -39,7 +38,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("Watches for event LogFundsWithdrawal()", co(function* () {
-      let roscas = yield createETHandERC20Roscas();
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         const ACTUAL_CONTRIBUTION = consts.CONTRIBUTION_SIZE * 0.8;
 
@@ -55,8 +53,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("Throws when calling withdraw when totalDebit > totalCredit", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
@@ -68,8 +64,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("fires LogCannotWithdrawFully when contract balance is less than what the user is entitled to", co(function* () {
-      let roscas = yield createETHandERC20Roscas();
-
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         let tokenContract = yield rosca.tokenContract.call();
         utils.increaseTime(consts.START_TIME_DELAY);
@@ -77,7 +71,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE); // contract's balance = consts.CONTRIBUTION_SIZE
         yield rosca.bid(consts.DEFAULT_POT(), {from: accounts[2]});
 
-        /* utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
+        utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
         yield rosca.startRound(); // 2nd Member will be entitled to consts.DEFAULT_POT() which is greater than consts.CONTRIBUTION_SIZE
 
         let creditBefore = (yield rosca.members.call(accounts[2]))[0];
@@ -97,12 +91,11 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         assert.equal(contractCredit, 0);
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
-        assert.equal(creditAfter, creditBefore - withdrewAmount); */
+        assert.equal(creditAfter, creditBefore - withdrewAmount);
       }
     }));
 
-    /* it("checks withdraw when the contract balance is more than what the user is entitled to", co(function* () {
-      let roscas = yield createETHandERC20Roscas();
+    it("checks withdraw when the contract balance is more than what the user is entitled to", co(function* () {
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         let tokenContract = yield rosca.tokenContract.call();
         utils.increaseTime(consts.START_TIME_DELAY);
@@ -132,8 +125,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("withdraw when contract can't send what the user is entitled while totalDiscount != 0", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
@@ -168,8 +159,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("withdraw when the contract can send what the user is entitled to while totalDiscount != 0", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         const BID_TO_PLACE = consts.DEFAULT_POT() * 0.80;
 
         utils.increaseTime(consts.START_TIME_DELAY);
@@ -279,5 +268,5 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let contractBalanceAfter = web3.eth.getBalance(rosca.address);
 
         assert.equal(contractBalanceBefore - contractBalanceAfter, 0.5 * consts.CONTRIBUTION_SIZE);
-    })); */
+    }));
 });

@@ -5,15 +5,18 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts')
+let rosca
 
 contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
     })
 
-    it("checks if totalDiscount grows when lowestBid < consts.DEFAULT_POT()", co(function* () {
-        let rosca = yield utils.createEthROSCA();
+    beforeEach(co(function* () {
+      rosca = yield utils.createEthROSCA();
+    }))
 
+    it("checks if totalDiscount grows when lowestBid < consts.DEFAULT_POT()", co(function* () {
         const BID_TO_PLACE = consts.DEFAULT_POT() * 0.75;
 
         utils.increaseTime(consts.START_TIME_DELAY);
@@ -31,8 +34,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         const BID_TO_PLACE = consts.DEFAULT_POT() * 0.68;
 
         utils.increaseTime(consts.START_TIME_DELAY);
@@ -56,8 +57,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),

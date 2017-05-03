@@ -6,22 +6,23 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let consts = require('./utils/consts')
+let rosca
 
 contract('ROSCA bid Unit Test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
     })
 
-    it("Throws when calling bid with valid parameters before ROSCA starts", co(function* () {
-        let rosca = yield utils.createEthROSCA();
+    beforeEach(co(function* () {
+      rosca = yield utils.createEthROSCA();
+    }))
 
+    it("Throws when calling bid with valid parameters before ROSCA starts", co(function* () {
         yield utils.assertThrows(rosca.bid(consts.DEFAULT_POT(), {from: accounts[1]}),
             "expected calling bid in round 0 to throw");
     }));
 
     it("Throws when calling bid without being in good Standing", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         utils.increaseTime(consts.START_TIME_DELAY);
         yield rosca.startRound();
 
@@ -30,8 +31,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("Throws Placing bid less than 65% of the Pot", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         const MIN_DISTRIBUTION_PERCENT = yield rosca.MIN_DISTRIBUTION_PERCENT.call();
 
         utils.increaseTime(consts.START_TIME_DELAY);
@@ -45,8 +44,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("generates a LogNewLowestBid event when placing a valid new bid", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         const BID_TO_PLACE = consts.DEFAULT_POT() * 0.94;
 
         utils.increaseTime(consts.START_TIME_DELAY);
@@ -72,8 +69,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("Throws when placing a valid bid from paid member", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
@@ -89,8 +84,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("ignores bid higher than MAX_NEXT_BID_RATIO of the previous lowest bid", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         const roscaTest = yield ROSCATest.deployed()
         const MAX_NEXT_BID_RATIO = yield roscaTest.MAX_NEXT_BID_RATIO.call();
         const NOT_LOW_ENOUGH_BID_TO_PLACE = consts.DEFAULT_POT() / 100 * MAX_NEXT_BID_RATIO + 100;
@@ -116,8 +109,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("ignores higher bid", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         const LOWER_BID = consts.DEFAULT_POT() * 0.95;
 
         utils.increaseTime(consts.START_TIME_DELAY);

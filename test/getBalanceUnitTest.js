@@ -5,17 +5,20 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts')
+let rosca
 
 contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
     })
 
+    beforeEach(co(function* () {
+      rosca = yield utils.createEthROSCA()
+    }))
+
     const NET_REWARDS_RATIO = ((1000 - consts.SERVICE_FEE_IN_THOUSANDTHS) / 1000);
 
     it("checks getParticipantBalance returns correct withdrawable value", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         yield Promise.all([
             rosca.contribute({from: accounts[0], value: consts.CONTRIBUTION_SIZE}),
             rosca.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE}),
@@ -47,8 +50,6 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
 
     it("checks that getParticipantBalance returns negative value for delinquents " +
        "(who haven't won the pot)", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         utils.increaseTime(consts.START_TIME_DELAY);
         yield rosca.startRound();
 
