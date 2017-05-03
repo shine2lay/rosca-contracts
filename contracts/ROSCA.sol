@@ -17,7 +17,7 @@ import "./deps/ERC20TokenInterface.sol";
  */
 contract ROSCA {
 
-  uint16 public constant CONTRACT_VERSION  = 2;
+  uint16 public constant CONTRACT_VERSION  = 3;
   ////////////
   // CONSTANTS
   ////////////
@@ -78,10 +78,11 @@ contract ROSCA {
 
   // ROSCA state
   // Currently, we support three different types of ROSCA
-  // 0 : ROSCA where lowest bidder wins (Traditional ROSCA)
+  // 0 : ROSCA where lowest bidder wins (Bidding ROSCA)
   // 1 : ROSCA where winners are chosen at random (lottery ROSCA)
   // 2 : ROSCA where winners are selected through a ordered list (pre-ordered ROSCA)
-  uint8 internal roscaType;
+  enum typesOfROSCA { biddingROSCA, lotteryROSCA, preOrderedROSCA }
+  typesOfROSCA roscaType;
   bool internal endOfROSCA = false;
   bool internal forepersonSurplusCollected = false;
   // A discount is the difference between a winning bid and the pot value. totalDiscounts is the amount
@@ -161,8 +162,8 @@ contract ROSCA {
     _;
   }
 
-  modifier onlyTraditionalROSCA {
-    if (roscaType != 0) {
+  modifier onlyBiddingROSCA {
+    if (roscaType != typesOfROSCA.biddingROSCA) {
       throw;
     }
     _;
@@ -192,7 +193,7 @@ contract ROSCA {
     */
   function ROSCA(
       ERC20TokenInterface erc20tokenContract,  // pass 0 to use ETH
-      uint8 roscaType_,
+      typesOfROSCA roscaType_,
       uint256 roundPeriodInSecs_,
       uint128 contributionSize_,
       uint256 startTime_,
@@ -212,6 +213,7 @@ contract ROSCA {
     if (serviceFeeInThousandths_ > MAX_FEE_IN_THOUSANDTHS) {
       throw;
     }
+
     roscaType = roscaType_;
     tokenContract = erc20tokenContract;
     serviceFeeInThousandths = serviceFeeInThousandths_;
@@ -262,9 +264,9 @@ contract ROSCA {
     bool winnerSelectedThroughBid = (winnerAddress != 0);
     uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
     // for pre-ordered ROSCA, pick the next person in the list (delinquent or not)
-    if (roscaType == 2) {
+    if (roscaType == typesOfROSCA.preOrderedROSCA) {
       // next one in the list will always be at index 0
-      // because we unpaid members are always in the front of the list
+      // because we keep the unpaid participants at positions [0..num_participants - current_round)
       winnerAddress = memberAddresses[0]
     }
     if (winnerAddress == 0) {
