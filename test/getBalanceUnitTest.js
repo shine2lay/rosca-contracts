@@ -20,10 +20,10 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
 
     it("checks getParticipantBalance returns correct withdrawable value", co(function* () {
         yield Promise.all([
-            rosca.contribute({from: accounts[0], value: consts.CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[2], value: consts.CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[3], value: consts.CONTRIBUTION_SIZE}),
+            utils.contribute(rosca, accounts[0], consts.CONTRIBUTION_SIZE),
+            utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE),
+            utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE),
+            utils.contribute(rosca, accounts[3], consts.CONTRIBUTION_SIZE),
         ]);
 
         utils.increaseTime(consts.START_TIME_DELAY);
@@ -66,7 +66,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         // contributed extra by consts.CONTRIBUTION_SIZE, when we try to withdraw, we should get consts.CONTRIBUTION_SIZE
         let EXTRA_CONTRIBUTION = 2e18;
         let debt = - balance;
-        yield rosca.contribute({from: accounts[1], value: (debt + EXTRA_CONTRIBUTION)});
+        yield utils.contribute(rosca, accounts[1], debt + EXTRA_CONTRIBUTION)
 
         let contractBalanceBefore = web3.eth.getBalance(rosca.address);
         yield rosca.withdraw({from: accounts[1]});
@@ -84,9 +84,9 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
-            rosca.contribute({from: accounts[0], value: 5 * consts.CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[1], value: 0.5 * consts.CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[2], value: 0.5 * consts.CONTRIBUTION_SIZE}),
+            utils.contribute(rosca, accounts[0], 5 * consts.CONTRIBUTION_SIZE),
+            utils.contribute(rosca, accounts[1], 0.5 * consts.CONTRIBUTION_SIZE),
+            utils.contribute(rosca, accounts[2], 0.5 * consts.CONTRIBUTION_SIZE),
         ]);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
@@ -112,7 +112,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         // delinquent who won the Pot already would be able to withdraw consts.defaultPot() * FEE
         // if they are no longer in debt
         let debt = - balance;
-        yield rosca.contribute({from: winnerAddress, value: debt});
+        yield utils.contribute(rosca, winnerAddress, debt);
 
         let contractBalanceBefore = web3.eth.getBalance(rosca.address);
         yield rosca.withdraw({from: winnerAddress});

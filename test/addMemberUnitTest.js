@@ -24,11 +24,11 @@ contract('ROSCA addMember Unit Test', function(accounts) {
 
     it("checks member get added properly", co(function* () {
         // try contributing from a non-member to make sure membership hasn't been established
-        yield utils.assertThrows(rosca.contribute({from: accounts[4], value: consts.CONTRIBUTION_SIZE}),
+        yield utils.assertThrows(utils.contribute(rosca, accounts[4], consts.CONTRIBUTION_SIZE),
             "expected calling contribute from non-member to throw");
 
         yield rosca.addMember(accounts[4]);
-        yield rosca.contribute({from: accounts[4], value: consts.CONTRIBUTION_SIZE});
+        yield utils.contribute(rosca, accounts[4], consts.CONTRIBUTION_SIZE);
 
         let credit = (yield rosca.members.call(accounts[4]))[0];
 

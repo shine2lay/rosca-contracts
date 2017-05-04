@@ -46,7 +46,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         for (let i = 0; i < consts.memberCount() + 1; i++) {
             yield utils.assertThrows(rosca.startRound(), "expected calling startRound before roundStartTime to throw");
 
-            yield rosca.contribute({from: accounts[2], value: consts.CONTRIBUTION_SIZE});
+            yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE);
 
             utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
             yield rosca.startRound();

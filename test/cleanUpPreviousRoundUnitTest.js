@@ -22,7 +22,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(), // needed to set lowestBid value + winnerAddress to 0
-            rosca.contribute({from: accounts[0], value: consts.CONTRIBUTION_SIZE}),
+            utils.contribute(rosca, accounts[0], consts.CONTRIBUTION_SIZE),
             rosca.bid(BID_TO_PLACE, {from: accounts[0]}),
             rosca.cleanUpPreviousRound(),
         ]);
@@ -39,7 +39,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
-            rosca.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE}),
+            utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE),
             rosca.bid(BID_TO_PLACE, {from: accounts[1]}),
         ]);
 
@@ -61,9 +61,9 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         yield Promise.all([
             rosca.startRound(),
             // member 0 will be eligible to win the pot if no bid was placed
-            rosca.contribute({from: accounts[0], value: consts.CONTRIBUTION_SIZE}),
+            utils.contribute(rosca, accounts[0], consts.CONTRIBUTION_SIZE),
             // member 2 will be eligible to win the pot if no bid was placed
-            rosca.contribute({from: accounts[2], value: consts.CONTRIBUTION_SIZE}),
+            utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE),
         ]);
 
         let winner;
@@ -93,7 +93,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         let pot = (memberList.length + 1) * consts.CONTRIBUTION_SIZE;
         utils.increaseTime(consts.START_TIME_DELAY);
         yield rosca.startRound();
-        yield rosca.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE});
+        yield utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();

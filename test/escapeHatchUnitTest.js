@@ -65,7 +65,7 @@ contract('Escape Hatch unit test', function(accounts) {
     yield* runRoscUpToAPoint(rosca);
     yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
 
-    yield rosca.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE * 7});
+    yield utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE * 7);
     yield rosca.withdraw({from: accounts[1]});
   }));
 
@@ -74,7 +74,7 @@ contract('Escape Hatch unit test', function(accounts) {
     yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
     yield rosca.activateEscapeHatch({from: accounts[0]});
 
-    yield utils.assertThrows(rosca.contribute(consts.CONTRIBUTION_SIZE* 7, {from: accounts[1]}));
+    yield utils.assertThrows(utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE * 7));
     yield utils.assertThrows(rosca.withdraw({from: accounts[1]}));
   }));
 
