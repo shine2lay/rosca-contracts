@@ -28,7 +28,7 @@ contract('Escape Hatch unit test', function(accounts) {
     for (let round = 0; round < 2; round++) {
       yield rosca.startRound({from: accounts[0]});
 
-      for (let participant = 0; participant < consts.MEMBER_COUNT(); participant++) {
+      for (let participant = 0; participant < consts.memberCount(); participant++) {
         yield utils.contribute(rosca, accounts[participant], consts.CONTRIBUTION_SIZE);
       }
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);

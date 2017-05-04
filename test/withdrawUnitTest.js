@@ -69,10 +69,10 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield rosca.startRound();
         yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE); // contract's balance = consts.CONTRIBUTION_SIZE
-        yield rosca.bid(consts.DEFAULT_POT(), {from: accounts[2]});
+        yield rosca.bid(consts.defaultPot(), {from: accounts[2]});
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound(); // 2nd Member will be entitled to consts.DEFAULT_POT() which is greater than consts.CONTRIBUTION_SIZE
+        yield rosca.startRound(); // 2nd Member will be entitled to consts.defaultPot() which is greater than consts.CONTRIBUTION_SIZE
 
         let creditBefore = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceBefore = yield utils.getBalance(accounts[2], tokenContract);
@@ -104,7 +104,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE);
         yield utils.contribute(rosca, accounts[0], consts.CONTRIBUTION_SIZE);
         yield utils.contribute(rosca, accounts[3], consts.CONTRIBUTION_SIZE * 3);
-        yield rosca.bid(consts.DEFAULT_POT(), {from: accounts[2]});
+        yield rosca.bid(consts.defaultPot(), {from: accounts[2]});
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
@@ -132,7 +132,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             rosca.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE}),
             // to make sure contract's balance is less than winning bid
             rosca.contribute({from: accounts[3], value: consts.CONTRIBUTION_SIZE * 0.3}),
-            rosca.bid(consts.DEFAULT_POT() * 0.80, {from: accounts[2]}),
+            rosca.bid(consts.defaultPot() * 0.80, {from: accounts[2]}),
         ]);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
@@ -159,7 +159,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("withdraw when the contract can send what the user is entitled to while totalDiscount != 0", co(function* () {
-        const BID_TO_PLACE = consts.DEFAULT_POT() * 0.80;
+        const BID_TO_PLACE = consts.defaultPot() * 0.80;
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
@@ -180,9 +180,9 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let currentRound = yield rosca.currentRound.call();
-        let totalDiscount = consts.DEFAULT_POT() - BID_TO_PLACE;
+        let totalDiscount = consts.defaultPot() - BID_TO_PLACE;
         let expectedCredit =
-        (currentRound * consts.CONTRIBUTION_SIZE) - utils.afterFee(totalDiscount / consts.MEMBER_COUNT(), consts.SERVICE_FEE_IN_THOUSANDTHS);
+        (currentRound * consts.CONTRIBUTION_SIZE) - utils.afterFee(totalDiscount / consts.memberCount(), consts.SERVICE_FEE_IN_THOUSANDTHS);
 
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();

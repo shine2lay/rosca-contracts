@@ -15,7 +15,7 @@ module.exports = {
   setMemberList: function(accounts) {
     memberList = [accounts[1], accounts[2], accounts[3]]
   },
-  MEMBER_COUNT: function() {
+  memberCount: function() {
     if(!memberList) {
       console.log('Member list needs to be set first before calling MEMBER_COUNT');
       process.exit(2);
@@ -23,8 +23,8 @@ module.exports = {
 
     return memberList.length + 1;
   },
-  DEFAULT_POT : function() {
-    return (this.CONTRIBUTION_SIZE * this.MEMBER_COUNT())
+  defaultPot : function() {
+    return (this.CONTRIBUTION_SIZE * this.memberCount())
   },
   SERVICE_FEE_IN_THOUSANDTHS: 2,
   START_TIME_DELAY: 10,

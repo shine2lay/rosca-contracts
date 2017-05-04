@@ -78,7 +78,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             rosca.contribute({from: accounts[1], value: 0.5 * consts.CONTRIBUTION_SIZE}),
             rosca.contribute({from: accounts[0], value: 0.5 * consts.CONTRIBUTION_SIZE}),
             rosca.contribute({from: accounts[2], value: consts.CONTRIBUTION_SIZE}),
-            rosca.bid(consts.DEFAULT_POT() * 0.8, {from: accounts[2]}),
+            rosca.bid(consts.defaultPot() * 0.8, {from: accounts[2]}),
         ]);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);

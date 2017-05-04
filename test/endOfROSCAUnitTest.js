@@ -24,16 +24,16 @@ contract('end of ROSCA unit test', function(accounts) {
       // Get to the start of the ROSCA.
       utils.increaseTime(consts.START_TIME_DELAY );
 
-      for (let round = 0; round < consts.MEMBER_COUNT(); round++) {
+      for (let round = 0; round < consts.memberCount(); round++) {
         // In each round, have each participant contribute a bit more than
         // they need to. We do that so that money is left over in the contract
         // at the end.
         yield rosca.startRound({from: accounts[0]});
 
-        for (let participant = 0; participant < consts.MEMBER_COUNT(); participant++) {
+        for (let participant = 0; participant < consts.memberCount(); participant++) {
           yield utils.contribute(rosca, accounts[participant], consts.CONTRIBUTION_SIZE);
         }
-        yield rosca.bid(consts.CONTRIBUTION_SIZE * consts.MEMBER_COUNT(), {from: accounts[round]});
+        yield rosca.bid(consts.CONTRIBUTION_SIZE * consts.memberCount(), {from: accounts[round]});
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
       }
     }
