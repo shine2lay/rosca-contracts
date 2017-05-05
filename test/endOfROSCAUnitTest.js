@@ -43,6 +43,7 @@ contract('end of ROSCA unit test', function(accounts) {
     it("checks if endOfROSCARetrieve{Surplus,Fees} retrieve the funds when called in this order + check event",
         co(function* () {
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
+        let tokenContract = yield rosca.tokenContract.call()
         yield* runFullRoscaNoWithdraw(rosca);
         yield utils.startRound(rosca);  // cleans up the last round
         // foreperson must wait another round before being able to get the surplus
@@ -51,7 +52,7 @@ contract('end of ROSCA unit test', function(accounts) {
         let contractCredit = yield utils.contractNetCredit(rosca);
         assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
 
-        let forepersonBalanceBefore = yield utils.getBalance(0, rosca);
+        let forepersonBalanceBefore = yield utils.getBalance(0, tokenContract);
 
         let result = yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
         let log = result.logs[0]
@@ -59,7 +60,7 @@ contract('end of ROSCA unit test', function(accounts) {
         assert.equal(log.args.amount, contractCredit,
             "LogForepersonSurplusWithdrawal doesn't display proper amount value");
 
-        let forepersonBalanceAfter = yield utils.getBalance(0, rosca);
+        let forepersonBalanceAfter = yield utils.getBalance(0, tokenContract);
 
         utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, contractCredit);
 
@@ -68,9 +69,9 @@ contract('end of ROSCA unit test', function(accounts) {
 
         // Now retrieve fees
         let totalFees = yield utils.totalFees(rosca);
-        forepersonBalanceBefore = yield utils.getBalance(0, rosca);
+        forepersonBalanceBefore = yield utils.getBalance(0, tokenContract);
         yield rosca.endOfROSCARetrieveFees({from: accounts[0]});
-        forepersonBalanceAfter = yield utils.getBalance(0, rosca);
+        forepersonBalanceAfter = yield utils.getBalance(0, tokenContract);
         utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, totalFees);
       }
     }));
@@ -81,18 +82,18 @@ contract('end of ROSCA unit test', function(accounts) {
       // foreperson must wait another round before being able to get the surplus
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
       let totalFees = yield utils.totalFees(rosca);
-      let forepersonBalanceBefore = yield utils.getBalance(0, rosca);
+      let forepersonBalanceBefore = yield utils.getBalance(0);
       yield rosca.endOfROSCARetrieveFees({from: accounts[0]});
-      let forepersonBalanceAfter = yield utils.getBalance(0, rosca);
+      let forepersonBalanceAfter = yield utils.getBalance(0);
 
       utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, totalFees);
 
       // Note in this test we use the raw contract balance, as the fees were already collected.
       let contractCredit = yield utils.getBalance(rosca.address);
 
-      forepersonBalanceBefore = yield utils.getBalance(0, rosca);
+      forepersonBalanceBefore = yield utils.getBalance(0);
       yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
-      forepersonBalanceAfter = yield utils.getBalance(0, rosca);
+      forepersonBalanceAfter = yield utils.getBalance(0);
 
       utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, contractCredit);
 
