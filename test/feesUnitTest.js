@@ -31,7 +31,9 @@ contract('fees unit test', function(accounts_) {
 
   before(function () {
     consts.setMemberList(accounts_)
+    utils.setAccounts(accounts_)
   })
+
   // Note accounts[0] is the foreperson, deploying the contract.
   const MEMBER_LIST = accounts_.slice(1, 2);  // a
   // ccounts[0] is also participant, as a foreperson

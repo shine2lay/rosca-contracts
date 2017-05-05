@@ -11,11 +11,13 @@ let rosca
 contract('Escape Hatch unit test', function(accounts) {
   before(function () {
     consts.setMemberList(accounts)
+    utils.setAccounts(accounts)
   })
 
   beforeEach(co(function* () {
     roscas = yield utils.createETHandERC20Roscas(accounts);
     rosca = yield utils.createEthROSCA()
+    utils.setRosca(rosca)
   }))
 
   let ESCAPE_HATCH_ENABLER;
@@ -26,10 +28,10 @@ contract('Escape Hatch unit test', function(accounts) {
     utils.increaseTime(consts.START_TIME_DELAY);
 
     for (let round = 0; round < 2; round++) {
-      yield rosca.startRound({from: accounts[0]});
+      yield utils.startRound(rosca);
 
       for (let participant = 0; participant < consts.memberCount(); participant++) {
-        yield utils.contribute(rosca, accounts[participant], consts.CONTRIBUTION_SIZE);
+        yield utils.contribute(participant, consts.CONTRIBUTION_SIZE, rosca);
       }
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
     }
@@ -65,8 +67,8 @@ contract('Escape Hatch unit test', function(accounts) {
     yield* runRoscUpToAPoint(rosca);
     yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
 
-    yield utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE * 7);
-    yield rosca.withdraw({from: accounts[1]});
+    yield utils.contribute(1, consts.CONTRIBUTION_SIZE * 7, rosca);
+    yield utils.withdraw(1, rosca);
   }));
 
   it("checks that once escape hatch is activated, contribute and withdraw throw", co(function* () {
@@ -74,14 +76,14 @@ contract('Escape Hatch unit test', function(accounts) {
     yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
     yield rosca.activateEscapeHatch({from: accounts[0]});
 
-    yield utils.assertThrows(utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE * 7));
-    yield utils.assertThrows(rosca.withdraw({from: accounts[1]}));
+    yield utils.assertThrows(utils.contribute(1, consts.CONTRIBUTION_SIZE * 7, rosca));
+    yield utils.assertThrows(utils.withdraw(1, rosca));
   }));
 
   it("checks that emergencyWithdrawal can only be called when escape hatch is enabled and active, and that " +
      "too only by foreperson", co(function* () {
     for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
-      let tokenContract = yield rosca.tokenContract.call();
+      let tokenContract = yield rosca.tokenContract.call()
       yield* runRoscUpToAPoint(rosca);
       utils.assertThrows(rosca.emergencyWithdrawal({from: accounts[0]}));  // not enabled and active
       yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});
@@ -90,9 +92,9 @@ contract('Escape Hatch unit test', function(accounts) {
       utils.assertThrows(rosca.emergencyWithdrawal({from: ESCAPE_HATCH_ENABLER}));  // not by foreperson
       utils.assertThrows(rosca.emergencyWithdrawal({from: accounts[1]}));  // not by foreperson
 
-      let forepersonBalanceBefore = yield utils.getBalance(accounts[0], tokenContract);
+      let forepersonBalanceBefore = yield utils.getBalance(0, tokenContract);
       yield rosca.emergencyWithdrawal({from: accounts[0]});  // not by foreperson
-      let forepersonBalanceAfter = yield utils.getBalance(accounts[0], tokenContract);
+      let forepersonBalanceAfter = yield utils.getBalance(0, tokenContract);
       assert.isAbove(forepersonBalanceAfter, forepersonBalanceBefore);
     }
   }));

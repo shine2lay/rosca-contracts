@@ -10,10 +10,12 @@ let rosca
 contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
+      utils.setAccounts(accounts)
     })
 
     beforeEach(co(function* () {
       rosca = yield utils.createEthROSCA();
+      utils.setRosca(rosca)
     }))
 
     it("checks if totalDiscount grows when lowestBid < consts.defaultPot()", co(function* () {
@@ -21,14 +23,15 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(), // needed to set lowestBid value + winnerAddress to 0
-            utils.contribute(rosca, accounts[0], consts.CONTRIBUTION_SIZE),
-            rosca.bid(BID_TO_PLACE, {from: accounts[0]}),
-            rosca.cleanUpPreviousRound(),
+            utils.startRound(), // needed to set lowestBid value + winnerAddress to 0
+            utils.contribute(0, consts.CONTRIBUTION_SIZE),
         ]);
+        yield utils.bid(0, BID_TO_PLACE)
+        yield rosca.cleanUpPreviousRound()
 
-        let discount = yield rosca.totalDiscounts.call();
-        const expectedDiscount = utils.afterFee(consts.defaultPot() - BID_TO_PLACE, consts.SERVICE_FEE_IN_THOUSANDTHS) / consts.memberCount();
+        let discount = yield utils.totalDiscounts();
+        const expectedDiscount = utils.afterFee(consts.defaultPot() - BID_TO_PLACE, consts.SERVICE_FEE_IN_THOUSANDTHS)
+          / consts.memberCount();
 
         assert.equal(discount, expectedDiscount, "toalDiscount value didn't get added properly");
     }));
@@ -38,10 +41,11 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(),
-            utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE),
-            rosca.bid(BID_TO_PLACE, {from: accounts[1]}),
+            utils.startRound(),
+            utils.contribute(1, consts.CONTRIBUTION_SIZE),
         ]);
+
+        yield utils.bid(1, BID_TO_PLACE)
 
         let result = yield rosca.cleanUpPreviousRound();
 
@@ -59,22 +63,21 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(),
+            utils.startRound(),
             // member 0 will be eligible to win the pot if no bid was placed
-            utils.contribute(rosca, accounts[0], consts.CONTRIBUTION_SIZE),
+            utils.contribute(0, consts.CONTRIBUTION_SIZE),
             // member 2 will be eligible to win the pot if no bid was placed
-            utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE),
+            utils.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
         let winner;
         let possibleWinner = [accounts[0], accounts[2]];
-        let winnerAddress = 0;
 
         let result = yield rosca.cleanUpPreviousRound();
 
         let log = result.logs[0]
 
-        winnerAddress = log.args.winnerAddress;
+        let winnerAddress = log.args.winnerAddress;
         winner = yield rosca.members.call(log.args.winnerAddress);
 
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
@@ -92,22 +95,22 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         let pot = (memberList.length + 1) * consts.CONTRIBUTION_SIZE;
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield rosca.startRound();
-        yield utils.contribute(rosca, accounts[1], consts.CONTRIBUTION_SIZE);
+        yield utils.startRound(rosca);
+        yield utils.contribute(1, consts.CONTRIBUTION_SIZE, rosca);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound();
+        yield utils.startRound(rosca);
 
         // check if p1 is the winner
-        let p1Credit = (yield rosca.members.call(accounts[1]))[0];
-        assert.equal(p1Credit.toString(), (consts.CONTRIBUTION_SIZE + pot / 1000 * (1000 - consts.SERVICE_FEE_IN_THOUSANDTHS)));
+        let p1Credit = yield utils.userCredit(1, rosca);
+        assert.equal(p1Credit, (consts.CONTRIBUTION_SIZE + pot / 1000 * (1000 - consts.SERVICE_FEE_IN_THOUSANDTHS)));
 
         let possibleWinner = [accounts[0], accounts[2]];
 
         let result = yield rosca.cleanUpPreviousRound();
         let log = result.logs[0]
         let winnerAddress = log.args.winnerAddress;
-        let winner = yield rosca.members.call(log.args.winnerAddress);
+        let winner = yield rosca.members.call(winnerAddress);
 
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
         assert.equal(winner[0].toString(), utils.afterFee((memberList.length + 1) * consts.CONTRIBUTION_SIZE,

@@ -7,6 +7,8 @@ let Promise = require("bluebird");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let ExampleToken = artifacts.require('test/ExampleToken.sol');
 let ERC20TokenInterface = artifacts.require('deps/ERC20TokenInterface.sol');
+let rosca
+let accounts
 
 // we need this becaues test env is different than script env
 let myWeb3 = (typeof web3 === undefined ? undefined : web3);
@@ -18,7 +20,8 @@ module.exports = {
     myWeb3 = web3;
   },
 
-  afterFee: function(amount, serviceFeeInThousandths) {
+  afterFee: function(amount, optServiceFeeInThousandths) {
+    let serviceFeeInThousandths = optServiceFeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS
     return amount / 1000 * (1000 - serviceFeeInThousandths);
   },
 
@@ -67,7 +70,8 @@ module.exports = {
   }),
 
   // Currency-agnostic
-  contractNetCredit: function* (rosca) {
+  contractNetCredit: function* (optRosca) {
+    let rosca = optRosca || this.rosca
     let tokenContract = yield rosca.tokenContract.call();
     if (tokenContract == ZERO_ADDRESS) {
       return web3.eth.getBalance(rosca.address).toNumber() - (yield rosca.totalFees.call()).toNumber();
@@ -76,13 +80,17 @@ module.exports = {
   },
 
   // Currency-agnostic
-  contribute: function(rosca, from, value) {
+  contribute: function(userIndexOrAddress, value, optRosca) {
+    let from = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+    let rosca = optRosca || this.rosca
+
     return rosca.tokenContract.call().then((tokenContract) => {
       if (tokenContract !== ZERO_ADDRESS) {  // This is an ERC20 contract. Approve and contribute.
         return ERC20TokenInterface.at(tokenContract).approve(rosca.address, value, {from: from}).then(() => {
           return rosca.contribute({from: from, gas: 2e6});
         });
       }
+
       // This is an ETH contract. Only need to call contribute.
       return rosca.contribute({from: from, value: value});
     });
@@ -94,30 +102,70 @@ module.exports = {
     return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
   }),
 
-  withdraw: function(rosca, from) {
+  withdraw: function(userIndexOrAddress, optRosca) {
+    let from = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+    let rosca = optRosca || this.rosca
+
     return rosca.withdraw({from: from});
   },
 
-  startRound: function(rosca) {
+  startRound: function(optRosca) {
+    let rosca = optRosca || this.rosca
+
     return rosca.startRound();
   },
 
-  bid: function(rosca, from, amount) {
+  bid: function(userIndexOrAddress, amount, optRosca) {
+    let from = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+    let rosca = optRosca || this.rosca
+
     return rosca.bid(amount, {from: from});
   },
 
-  userCredit: function* (rosca, user) {
-    let userInfo = yield rosca.members.call(user)
-    return userInfo[0] // credit is in 0 position of the returned value
-  },
+  totalDiscounts: co(function* (optRosca) {
+    let rosca = optRosca || this.rosca
+    return (yield rosca.totalDiscounts.call()).toNumber()
+  }),
 
-  getBalance: co(function* (account, tokenContract) {
+  totalFees: co(function* (optRosca) {
+    let rosca = optRosca || this.rosca
+    return (yield rosca.totalFees.call()).toNumber()
+  }),
+
+  getParticipantBalance: co(function* (userIndexOrAddress, optRosca) {
+    let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+    let rosca = optRosca || this.rosca
+    return (yield rosca.getParticipantBalance.call(user)).toNumber()
+  }),
+
+
+  userCredit: co(function* (userIndexOrAddress, optRosca) {
+    let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+    let rosca = optRosca || this.rosca
+
+    let userInfo = yield rosca.members.call(user)
+    return userInfo[0].toNumber() // credit is in 0 position of the returned value
+  }),
+
+  getBalance: co(function* (userIndexOrAddress, optTokenContract) {
+    let account = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+    let tokenContract = optTokenContract || ZERO_ADDRESS
+
     if (!tokenContract || tokenContract === ZERO_ADDRESS) {
       return web3.eth.getBalance(account).toNumber();
     }
+
     let balance = (yield ExampleToken.at(tokenContract).balanceOf(account)).toNumber();
     return balance;
   }),
+
+  setRosca: function (rosca) {
+    this.rosca = rosca;
+  },
+
+  setAccounts: function(accounts) {
+    this.accounts = accounts
+  },
 
   getGasUsage: function(transactionPromise, extraData) {
     return new Promise(function(resolve, reject) {

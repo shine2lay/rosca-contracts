@@ -1,6 +1,6 @@
 "use strict";
 
-// This test checks much of the functionality only against ETH ROSCA.
+// This test checks much of the functionality only against ETH utils.
 // It tests against ERC20 ROSCAs only where relevant.
 
 let Promise = require("bluebird");
@@ -15,20 +15,22 @@ let rosca
 contract('ROSCA contribute Unit Test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
+      utils.setAccounts(accounts)
     })
 
     beforeEach(co(function* () {
       roscas = yield utils.createETHandERC20Roscas(accounts);
       rosca = yield utils.createEthROSCA();
+      utils.setRosca(rosca)
     }))
 
     it("throws when calling contribute from a non-member", co(function* () {
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         // check if valid contribution can be made
-        yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE);
+        yield utils.contribute(2, consts.CONTRIBUTION_SIZE, rosca);
 
         // check throws when contributing from non-member.
-        yield utils.assertThrows(utils.contribute(rosca, accounts[4], consts.CONTRIBUTION_SIZE),
+        yield utils.assertThrows(utils.contribute(4, consts.CONTRIBUTION_SIZE, rosca),
             "calling contribute from a non-member success");
       }
     }));
@@ -36,17 +38,17 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     it("throws when contributing after end of Rosca", co(function* () {
         for (let i = 0; i < consts.memberList().length + 2; i++) {
             utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-            yield rosca.startRound();
+            yield utils.startRound();
         }
 
-        utils.assertThrows(rosca.contribute({from: accounts[0], value: consts.CONTRIBUTION_SIZE}));
+        utils.assertThrows(utils.contribute(0, consts.CONTRIBUTION_SIZE));
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function* () {
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         const ACTUAL_CONTRIBUTION = consts.CONTRIBUTION_SIZE * 0.1;
 
-        let result = yield utils.contribute(rosca, accounts[1], ACTUAL_CONTRIBUTION);
+        let result = yield utils.contribute(1, ACTUAL_CONTRIBUTION, rosca);
         let log = result.logs[0]
 
         assert.equal(log.args.user, accounts[1], "LogContributionMade doesn't display proper user value");
@@ -59,10 +61,10 @@ contract('ROSCA contribute Unit Test', function(accounts) {
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         const CONTRIBUTION_CHECK = consts.CONTRIBUTION_SIZE * 1.2;
 
-        yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE * 0.2);
-        yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE);
+        yield utils.contribute(2, consts.CONTRIBUTION_SIZE * 0.2, rosca);
+        yield utils.contribute(2, consts.CONTRIBUTION_SIZE, rosca);
 
-        let creditAfter = (yield rosca.members.call(accounts[2]))[0];
+        let creditAfter = yield utils.userCredit(2, rosca);
 
         assert.equal(creditAfter, CONTRIBUTION_CHECK, "contribution's credit value didn't get registered properly");
       }
@@ -74,18 +76,18 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         let rosca = yield utils.createEthROSCA(members);
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(),
-            rosca.contribute({from: accounts[1], value: 0.5 * consts.CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[0], value: 0.5 * consts.CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[2], value: consts.CONTRIBUTION_SIZE}),
-            rosca.bid(consts.defaultPot() * 0.8, {from: accounts[2]}),
+            utils.startRound(rosca),
+            utils.contribute(1, 0.5 * consts.CONTRIBUTION_SIZE, rosca),
+            utils.contribute(0, 0.5 * consts.CONTRIBUTION_SIZE, rosca),
+            utils.contribute(2, consts.CONTRIBUTION_SIZE, rosca),
         ]);
 
+        yield utils.bid(2, consts.defaultPot() * 0.8, rosca)
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound();
+        yield utils.startRound(rosca);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        let result = yield rosca.startRound();
+        let result = yield utils.startRound(rosca);
         let log = result.logs[0]
         let winnerAddress = log.args.winnerAddress;
 
@@ -93,12 +95,12 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         // requirement to get Out of debt = 3(currentRound) + 3(defaultPot) * fee
         // so credit must be at least = 3(currentRound) + 3(defaultPot) * fee - totalDiscount
         // so winnerAddress needs to contribute = 2.5 - totalDiscount
-        let contributionToNonDelinquency = 2.5 * consts.CONTRIBUTION_SIZE - (yield rosca.totalDiscounts.call());
-        yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
+        let contributionToNonDelinquency = 2.5 * consts.CONTRIBUTION_SIZE - (yield utils.totalDiscounts(rosca));
+        yield utils.assertThrows(utils.withdraw(winnerAddress, rosca));
         // for some reason 1 is being rounded up so 10 is used instead
-        yield rosca.contribute({from: winnerAddress, value: (contributionToNonDelinquency - 10)});
-        yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
-        yield rosca.contribute({from: winnerAddress, value: 10});
-        yield rosca.withdraw({from: winnerAddress});
+        yield utils.contribute(winnerAddress, (contributionToNonDelinquency - 10), rosca);
+        yield utils.assertThrows(utils.withdraw(winnerAddress, rosca));
+        yield utils.contribute(winnerAddress, 10, rosca);
+        yield utils.withdraw(winnerAddress, rosca);
     }));
 });
