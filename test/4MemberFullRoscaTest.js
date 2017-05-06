@@ -17,6 +17,7 @@ let currentRosca;
 let ethRosca;
 let tokenRosca;
 let accounts;
+let rosca;
 
 const WINNING_BID_PERCENT = [0.95, 0.90];
 
@@ -45,10 +46,6 @@ function withdraw(from) {
   return currentRosca.rosca.withdraw({from: accounts[from]});
 }
 
-function participantInfo(member) {
-  return currentRosca.rosca.members.call(accounts[member]);
-}
-
 function getBalance(account) {
   if (currentRosca.tokenContract === 0) {
     return Promise.resolve(web3.eth.getBalance(account));
@@ -62,27 +59,6 @@ function assertWeiCloseTo(actual, expected) {
   assert.closeTo(Math.abs(1 - actual / expected), 0, 0.0001, "actual: " + actual + ",expected: " + expected);
 }
 
-function* getContractStatus() {
-  let results = yield Promise.all([
-          participantInfo(0),
-          participantInfo(1),
-          participantInfo(2),
-          participantInfo(3),
-          currentRosca.rosca.totalDiscounts.call(),
-          currentRosca.rosca.currentRound.call(),
-          currentRosca.rosca.totalFees.call(),
-      ]);
-  let balance = (yield currentRosca.rosca.getBalance()).toNumber();
-  return {
-    credits: [
-      results[0][0].toNumber(), results[1][0].toNumber(), results[2][0].toNumber(), results[3][0].toNumber()],
-    totalDiscounts: results[4].toNumber(),
-    currentRound: results[5].toNumber(),
-    balance: balance,
-    totalFees: results[6].toNumber(),
-  };
-}
-
 contract('Full 4 Member ROSCA Test', function(accounts_) {
   const MEMBER_COUNT = 4;
   const CONTRIBUTION_SIZE = 1e18;
@@ -91,6 +67,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
   const NET_REWARDS_RATIO = ((1000 - SERVICE_FEE_IN_THOUSANDTHS) / 1000);
 
   before(function(done) {
+    consts.setMemberList(accounts_)
+    utils.setAccounts(accounts_)
     accounts = accounts_;
     utils.mineOneBlock();  // reset the blockchain
 
@@ -113,6 +91,12 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
           });
         });
   });
+
+  beforeEach(co(function* () {
+    tokenRosca = yield utils.createERC20ROSCA(accounts)
+    ethRosca = yield utils.createEthROSCA()
+    utils.setRosca(ethRosca)
+  }))
 
   // In the different tests' comments:
   // C is the CONTRIBUTION_SIZE
@@ -411,12 +395,12 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
 
   function* testCurrentRosca() {
     yield testPreRosca();
-    yield test1stRound();
+    /* yield test1stRound();
     yield test2ndRound();
     yield test3rdRound();
     yield test4thRound();
     yield testPostRosca();
-    yield postRoscaCollectionPeriod();
+    yield postRoscaCollectionPeriod(); */
   }
 
   it("ETH Rosca", co(function* () {
@@ -424,8 +408,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     yield testCurrentRosca();
   }));
 
-  it("Token ROSCA", co(function* () {
+  /* it("Token ROSCA", co(function* () {
     currentRosca = tokenRosca;
     yield testCurrentRosca();
-  }));
+  })); */
 });
