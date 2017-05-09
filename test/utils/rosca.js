@@ -123,6 +123,18 @@ roscaHelper.prototype.tokenContract = function(optRosca) {
   return rosca.tokenContract.call();
 }
 
+roscaHelper.prototype.withdrawAndGetWithdrewAmount = function* (userIndexOrAddress, optRosca) {
+  let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+  let rosca = optRosca || this.rosca;
+
+  let contractBalanceBefore = yield this.getBalance(rosca.address);
+
+  yield this.withdraw(user);
+  let contractBalanceAfter = yield this.getBalance(rosca.address);
+
+  return contractBalanceBefore - contractBalanceAfter
+}
+
 roscaHelper.prototype.endOfROSCARetrieveSurplus = function(userIndexOrAddress, optRosca) {
   let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
   let rosca = optRosca || this.rosca;

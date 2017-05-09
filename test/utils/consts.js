@@ -11,8 +11,9 @@ module.exports = {
     }
     return memberList;
   },
-  setMemberList: function(accounts) {
-    memberList = [accounts[1], accounts[2], accounts[3]];
+  setMemberList: function(accounts, sliceIndex) {
+    sliceIndex = sliceIndex || 4 // by default, we want 3 additional members (excluding foreperson)
+    memberList = accounts.slice(1, sliceIndex);
   },
   memberCount: function() {
     if(!memberList) {
