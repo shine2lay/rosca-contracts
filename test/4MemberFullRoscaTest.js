@@ -21,6 +21,8 @@ let rosca;
 
 const WINNING_BID_PERCENT = [0.95, 0.90, 1, 1];
 
+const WINNER_BY_ROUND = [2, 1, 0, 3];
+
 const DISCOUNT_BY_ROUND = [
   utils.afterFee((1 - WINNING_BID_PERCENT[0])),
   utils.afterFee((1 - WINNING_BID_PERCENT[1])),
@@ -42,17 +44,15 @@ const WITHDREW_PERCENT = [
   [0, 0, 0, 0],
 ];
 
-const WINNER_BY_ROUND = [2, 1, 0, 3]
-
 // Due to js roundoff errors, we allow values be up to a basis point off.
 function assertWeiCloseTo(actual, expected) {
   // deal with rounding errors by allowing some minimal difference of 0.1%
   assert.closeTo(Math.abs(1 - actual / expected), 0, 0.0001, "actual: " + actual + ",expected: " + expected);
 }
 
-function contractBalanceByRound (roundNum) {
+function expectedContractBalanceUptoRoundNum (roundNum) {
   let totalBalance = 0
-  let totalFees = 0
+  let balanceToCollectFeesUpon = 0
 
   for (let i = 0; i < roundNum; i++) {
     for (let j = 0; j < consts.memberCount(); j++) {
