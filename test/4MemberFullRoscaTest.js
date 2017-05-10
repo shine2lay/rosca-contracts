@@ -50,6 +50,18 @@ function assertWeiCloseTo(actual, expected) {
   assert.closeTo(Math.abs(1 - actual / expected), 0, 0.0001, "actual: " + actual + ",expected: " + expected);
 }
 
+function contractBalanceByRound (roundNum) {
+  let totalBalance = 0
+  let totalFees = 0
+
+  for (let i = 0; i < roundNum; i++) {
+    for (let j = 0; j < consts.memberCount(); j++) {
+      totalBalance += CONTRIBUTIONS_PERCENT[j][i]
+      totalBalance -= WITHDREW_PERCENT[j][i]
+    }
+  }
+}
+
 function expectedCreditToDate (userIndex, currentRound) {
   let totalContribution = 0;
   for (let i = 0; i < currentRound; i++) {
@@ -59,7 +71,6 @@ function expectedCreditToDate (userIndex, currentRound) {
       totalContribution += utils.afterFee(WINNING_BID_PERCENT[i] * consts.memberCount())
     }
   }
-  console.log(totalContribution)
   return totalContribution * consts.CONTRIBUTION_SIZE;
 }
 
@@ -263,8 +274,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     let contractBefore = yield rosca.getContractStatus();
     yield rosca.withdraw(0);
     let contract = yield rosca.getContractStatus();
-    console.log(contractBefore)
-    console.log(contract)
+
     // contract doesn't have enough funds to fully withdraw p0's request, only totalFees should be left after withdrawal
     assert.equal(contractBefore.balance - contract.balance, contractBefore.balance - contract.totalFees);
     expectedContractBalance = contract.totalFees;
@@ -301,7 +311,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     // assertWeiCloseTo(contract.credits[3], expectedCreditToDate(3, 4));
 
     // The entire pot was won, so TD does not change
-    assertWeiCloseTo(contract.totalDiscounts, contractBefore.totalDiscounts);
+    /* assertWeiCloseTo(contract.totalDiscounts, contractBefore.totalDiscounts);
 
     // total deposit = 6 * contribution , no withdrawal
     expectedContractBalance = expectedContractBalance + 6 * consts.CONTRIBUTION_SIZE;
@@ -316,7 +326,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
 
     assert.equal(contract.currentRound, 4); // currentRound value
     // End of Rosca has been reached
-    assert.isOk(yield rosca.getCurrentRosca().endOfROSCA.call());
+    assert.isOk(yield rosca.getCurrentRosca().endOfROSCA.call()); */
   }
 
   function* testPostRosca() {
@@ -370,8 +380,8 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield test2ndRound();
     yield test3rdRound();
     yield test4thRound();
-    yield testPostRosca();
-    yield postRoscaCollectionPeriod();
+    // yield testPostRosca();
+    // yield postRoscaCollectionPeriod();
   }
 
   it("ETH Rosca", co(function* () {
