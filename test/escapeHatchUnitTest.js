@@ -5,7 +5,7 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/rosca')
+let ROSCAHelper = require('./utils/roscaHelper')
 
 let ethRosca;
 let erc20Rosca;

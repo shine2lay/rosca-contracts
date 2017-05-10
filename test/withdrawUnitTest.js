@@ -8,7 +8,7 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/rosca')
+let ROSCAHelper = require('./utils/roscaHelper')
   
 let ethRosca;
 let erc20Rosca;
@@ -187,7 +187,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let creditAfter = yield ethRosca.userCredit(2);
         let currentRound = yield ethRosca.getCurrentRosca().currentRound.call();
         let totalDiscount = consts.defaultPot() - BID_TO_PLACE;
-
         let expectedCredit = (currentRound * consts.CONTRIBUTION_SIZE)
           - utils.afterFee(totalDiscount / consts.memberCount(), consts.SERVICE_FEE_IN_THOUSANDTHS);
 

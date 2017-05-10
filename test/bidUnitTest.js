@@ -5,8 +5,9 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
+
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/rosca')
+let ROSCAHelper = require('./utils/roscaHelper')
 
 let rosca;
 
@@ -76,6 +77,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
+
             rosca.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
@@ -89,6 +91,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
     it("ignores bid higher than MAX_NEXT_BID_RATIO of the previous lowest bid", co(function* () {
         const roscaTest = yield ROSCATest.deployed();
+
         const MAX_NEXT_BID_RATIO = yield roscaTest.MAX_NEXT_BID_RATIO.call();
         const NOT_LOW_ENOUGH_BID_TO_PLACE = consts.defaultPot() / 100 * MAX_NEXT_BID_RATIO + 100;
 
@@ -123,7 +126,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
             rosca.contribute(1, consts.CONTRIBUTION_SIZE),
             rosca.contribute(3, consts.CONTRIBUTION_SIZE),
         ]);
-
         yield Promise.all([
             rosca.bid(3, LOWER_BID),
             rosca.bid(1, consts.defaultPot()),

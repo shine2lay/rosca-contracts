@@ -5,7 +5,7 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/rosca')
+let ROSCAHelper = require('./utils/roscaHelper')
 
 let rosca;
 
@@ -29,11 +29,11 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         ]);
 
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield rosca.startRound(rosca);
+        yield rosca.startRound();
         yield rosca.bid(2, consts.defaultPot() * 0.98);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound(rosca);
+        yield rosca.startRound();
         let balance = yield rosca.getParticipantBalance(2);
 
         let totalDiscounts = yield rosca.totalDiscounts();
@@ -110,7 +110,6 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         // currentRound is 3 so expected balance = 3 * consts.CONTRIBUTION_SIZE - 0.5 * consts.CONTRIBUTION_SIZE(already contributed)
         let expectedBalance = - 2.5 * consts.CONTRIBUTION_SIZE;
         assert.equal(balance, expectedBalance);
-
         utils.assertThrows(rosca.withdraw(winnerAddress));
         // delinquent who won the Pot already would be able to withdraw consts.defaultPot() * FEE
         // if they are no longer in debt

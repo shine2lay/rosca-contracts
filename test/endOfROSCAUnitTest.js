@@ -5,7 +5,7 @@ let co = require("co").wrap;
 let Promise = require("bluebird");
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/rosca')
+let ROSCAHelper = require('./utils/roscaHelper')
 
 let ethRosca;
 let erc20Rosca;
@@ -79,6 +79,7 @@ contract('end of ROSCA unit test', function(accounts) {
     it("checks if endOfROSCARetrieve{Fees, Surplus} retrieve the funds when called in this order", co(function* () {
       yield runFullRoscaNoWithdraw(ethRosca);
       yield ethRosca.startRound();  // cleans up the last round
+
       // foreperson must wait another round before being able to get the surplus
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
       let totalFees = yield ethRosca.totalFees();

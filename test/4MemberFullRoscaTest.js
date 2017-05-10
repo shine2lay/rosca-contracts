@@ -301,7 +301,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
 
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-    // Nobody rosca.bids and the round ends.
+    // Nobody bids and the round ends.
     yield rosca.startRound();
 
     // No one wins this round because the only non-winner (p3) is not in good standing.
