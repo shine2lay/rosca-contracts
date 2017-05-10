@@ -19,10 +19,13 @@ let ethRosca;
 let erc20Rosca;
 let rosca;
 
+// Percent of the pot that winner of each round will bid
 const WINNING_BID_PERCENT = [0.95, 0.90, 1, 1];
 
+// winners of each round by accountIndex
 const WINNER_BY_ROUND = [2, 1, 0, 3];
 
+// Individual discount
 const DISCOUNT_BY_ROUND = [
   utils.afterFee((1 - WINNING_BID_PERCENT[0])),
   utils.afterFee((1 - WINNING_BID_PERCENT[1])),
