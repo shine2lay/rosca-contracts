@@ -10,7 +10,7 @@ let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let ExampleToken = artifacts.require('test/ExampleToken.sol');
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/rosca')
+let ROSCAHelper = require('./utils/roscaHelper')
 
 let expectedContractBalance;
 let p0ExpectedCredit;

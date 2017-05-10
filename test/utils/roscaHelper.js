@@ -4,6 +4,7 @@ let co = require("co").wrap;
 let consts = require("./consts.js");
 let ROSCATest = artifacts.require('ROSCATest.sol'); // eslint-disable-line
 let ExampleToken = artifacts.require('test/ExampleToken.sol'); // eslint-disable-line
+let Promise = require("bluebird");
 let ERC20TokenInterface = artifacts.require('deps/ERC20TokenInterface.sol'); // eslint-disable-line
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -122,6 +123,51 @@ roscaHelper.prototype.tokenContract = function(optRosca) {
 
   return rosca.tokenContract.call();
 }
+
+roscaHelper.prototype.withdrawAndGetWithdrewAmount = function* (userIndexOrAddress, optRosca) {
+  let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+  let rosca = optRosca || this.rosca;
+
+  let contractBalanceBefore = yield this.getBalance(rosca.address);
+
+  yield this.withdraw(user);
+  let contractBalanceAfter = yield this.getBalance(rosca.address);
+
+  return contractBalanceBefore - contractBalanceAfter
+}
+
+roscaHelper.prototype.getParticipantInfo = function(userIndexOrAddress, optRosca) {
+  let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+  let rosca = optRosca || this.rosca;
+
+  return rosca.members.call(user);
+}
+
+roscaHelper.prototype.getContractStatus = co(function* (optRosca) {
+  let rosca = optRosca || this.rosca;
+
+  let memberInfos = []
+  for (let i = 0; i < consts.memberCount(); i++) {
+    memberInfos.push(yield this.userCredit(i));
+  }
+
+  let results = yield Promise.all([
+    rosca.totalDiscounts.call(),
+    rosca.currentRound.call(),
+    rosca.totalFees.call(),
+  ]);
+
+  let balance = yield rosca.getBalance(rosca.address);
+
+  return {
+    credits: [
+      memberInfos[0], memberInfos[1], memberInfos[2], memberInfos[3]],
+    totalDiscounts: results[0].toNumber(),
+    currentRound: results[1].toNumber(),
+    balance: balance,
+    totalFees: results[2].toNumber(),
+  };
+});
 
 roscaHelper.prototype.endOfROSCARetrieveSurplus = function(userIndexOrAddress, optRosca) {
   let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
