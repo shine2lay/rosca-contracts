@@ -118,10 +118,10 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield rosca.bid(2, consts.defaultPot()); // lowestBid = pot, winner = 2
     // foreperson should be allowed to withdraw the extra C * 9, new credit = contributionSize
     yield rosca.rosca.withdraw(0);  // p0 withdraws overcontributions, credit should be C again
-    yield rosca.bid(1, consts.defaultPot() * 0.98); // lowestBid = pot * 0.98, winner = 1
+    yield rosca.bid(1, consts.defaultPot() * WINNING_BID_PERCENT[0] * 1.04); // lowestBid = pot * 0.98, winner = 1
     yield rosca.bid(2, consts.defaultPot() * WINNING_BID_PERCENT[0]); // lowestBid = pot * 0.95, winner = 2
     yield rosca.contribute(3, consts.CONTRIBUTION_SIZE);  // p3's credit = contributionSize
-    yield rosca.bid(1, consts.defaultPot() * 0.97); // higher than lowestBid; ignored
+    yield rosca.bid(1, consts.defaultPot() * WINNING_BID_PERCENT[0] * 1.04); // higher than lowestBid; ignored
 
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
@@ -170,7 +170,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
 
     let contract = yield rosca.getContractStatus();
     // contract should have enough balance to withdraw the fully amount.
-    assert.equal(contract.credits[2], 2 * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts);
+    assert.equal(contract.credits[2], expectedCreditToDate(2, 2));
 
     assert.equal(contractBefore.balance - contract.balance, expectedWithdrawalBalance);
 
@@ -179,7 +179,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     // Foreperson only pays the extra money required, taking into account discount from previous round.
     // Foreperson's credit is = C (from before) + C - totalDiscount
     yield rosca.contribute(0, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[0][1]);
-    yield rosca.bid(0, consts.defaultPot() * 0.95); // lowestBid = Pot * 0.95, winnerAddress = foreman
+    yield rosca.bid(0, consts.defaultPot() * WINNING_BID_PERCENT[1] * 1.05); // lowestBid = Pot * 0.95, winnerAddress = foreman
     yield rosca.bid(1, consts.defaultPot() * WINNING_BID_PERCENT[1]); // lowestBid = Pot * 0.90, winner = 1
     yield utils.assertThrows(rosca.bid(2, consts.defaultPot() * 0.75));  // 2 already won
     yield utils.assertThrows(rosca.bid(3, consts.defaultPot() * 0.75));  // 3 is not in good standing
@@ -199,14 +199,12 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assert.equal(contract.credits[2], expectedCreditToDate(2, 2));
     assert.equal(contract.credits[3], consts.CONTRIBUTION_SIZE); // not in good standing
     // TD == OLD_TD + (consts.defaultPot() - POT_WON) * NET_REWARD_RATIO / memberCount
-    let expectedTotalDiscounts =
-        contractBefore.totalDiscounts + consts.defaultPot() * (1 - WINNING_BID_PERCENT[1]) * NET_REWARDS_RATIO / consts.memberCount();
+    let expectedTotalDiscounts = (DISCOUNT_BY_ROUND[0] + DISCOUNT_BY_ROUND[1]) * consts.CONTRIBUTION_SIZE;
     assertWeiCloseTo(contract.totalDiscounts, expectedTotalDiscounts);
 
     // Contributions were 0.8C + 1C - totalDiscount from last Round .
     // Thus we expect credit to be lastRound's balance + 0.8 + 1 - totalDiscount from last round - balance withdrawn
-    expectedContractBalance = expectedContractBalance + 1.8 * consts.CONTRIBUTION_SIZE - expectedWithdrawalBalance -
-        consts.defaultPot() * 0.05 / consts.memberCount() * NET_REWARDS_RATIO;
+    expectedContractBalance = expectedContractBalanceUpToRound(2);
     assert.equal(contract.balance, expectedContractBalance);
     // Only p3 is delinquent, in (1C - TD), and the fees should refelct that.
     let theoreticalTotalFees = consts.defaultPot() * (contract.currentRound - 1);
@@ -224,11 +222,12 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield rosca.withdraw(1);
     let contract = yield rosca.getContractStatus();
 
-    let expectedCreditAfter = 3 * consts.CONTRIBUTION_SIZE - consts.defaultPot() * 0.15 / consts.memberCount() * NET_REWARDS_RATIO;
-    assert.equal(contract.credits[1], expectedCreditAfter);
+    let expectedCreditAfter = expectedCreditToDate(1, 3);
+    assertWeiCloseTo(contract.credits[1], expectedCreditAfter);
 
     let expectedWithdrawal = contractBefore.credits[1] - expectedCreditAfter;
-    assert.equal(contractBefore.balance - contract.balance, expectedWithdrawal);
+
+    assertWeiCloseTo(contractBefore.balance - contract.balance, expectedWithdrawal);
 
     yield Promise.all([
       rosca.contribute(0, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[0][2]),  // p0's credit == 1.95C + C == 2.95C
@@ -256,9 +255,9 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assertWeiCloseTo(contract.totalDiscounts, contractBefore.totalDiscounts);
 
     // Last we checked contractBalance (in this test) it was 0.496C. With 2 contributions of C each, we get to 2.424C.
-    expectedContractBalance = expectedContractBalance - expectedWithdrawal + 2 * consts.CONTRIBUTION_SIZE;
+    expectedContractBalance = expectedContractBalanceUpToRound(3);
 
-    assert.equal(contract.balance, expectedContractBalance);
+    assertWeiCloseTo(contract.balance, expectedContractBalance);
     // totalFees == 3 * 4 = 12 - 1(p2) - 1(p3) = 10C == 0.1 C
     let theoreticalTotalFees = consts.defaultPot() * (contract.currentRound - 1);
     let p2Delinquency =
@@ -284,8 +283,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     expectedContractBalance = contract.totalFees;
     assert.equal(contract.balance, expectedContractBalance);
 
-    p0ExpectedCredit = 3 * consts.CONTRIBUTION_SIZE - consts.defaultPot() * 0.05 / consts.memberCount() * NET_REWARDS_RATIO +
-        consts.defaultPot() * NET_REWARDS_RATIO - (contractBefore.balance - contract.totalFees);
+    p0ExpectedCredit = expectedCreditToDate(0, 4);
     assertWeiCloseTo(contract.credits[0], p0ExpectedCredit);
     Promise.all([
       rosca.contribute(1, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[1][3]),
@@ -318,8 +316,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assertWeiCloseTo(contract.totalDiscounts, contractBefore.totalDiscounts);
 
     // total deposit = 6 * contribution , no withdrawal
-    expectedContractBalance = expectedContractBalance + 6 * consts.CONTRIBUTION_SIZE;
-    assertWeiCloseTo(contract.balance, expectedContractBalance);
+    expectedContractBalance = expectedContractBalanceUpToRound(4);
 
     let theoreticalTotalFees = consts.defaultPot() * contract.currentRound;
     let p3Delinquency =
@@ -338,14 +335,14 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield rosca.withdraw(0);  // p0's credit from last round
 
     let contract = yield rosca.getContractStatus();
-    assertWeiCloseTo(contractBefore.balance - contract.balance, p0ExpectedCredit -
-        (4 * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts));
+    assertWeiCloseTo(contractBefore.balance - contract.balance, expectedCreditToDate(0, 4) -
+        (contractBefore.currentRound * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts));
     // last rounded ended with contract.balance == 2.1695. So it should now have (2.1695 - 0.7425C) == 1.427C
-    expectedContractBalance -= p0ExpectedCredit - (4 * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts);
+    expectedContractBalance -= p0ExpectedCredit - (contractBefore.currentRound * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts);
     assertWeiCloseTo(contract.balance, expectedContractBalance);
-    assert.equal(contract.credits[0], 4 * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts);
+    assert.equal(contract.credits[0], consts.defaultPot() - contractBefore.totalDiscounts);
 
-    utils.assertThrows(rosca.contribute(2, 2 * consts.CONTRIBUTION_SIZE));
+    utils.assertThrows(rosca.contribute(2, consts.CONTRIBUTION_SIZE));
 
     // p3 can withdraw the amount that he contributed
     yield rosca.withdraw(3);
