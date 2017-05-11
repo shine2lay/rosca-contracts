@@ -53,7 +53,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         // Note we only check ETH ROSCA creation as the constructor simply does not care
         // about whether or not ROSCA uses a token contract.
         let rosca = yield ROSCATest.new(
-            0 /* use ETH */,
+            0 /* use ETH */, 0 /* bidding ROSCA */,
             consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, consts.memberList(),
             consts.SERVICE_FEE_IN_THOUSANDTHS);
 

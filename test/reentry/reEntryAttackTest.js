@@ -12,7 +12,7 @@ contract('ROSCA reentry attack test', function(accounts) {
   // Parameters for new ROSCA creation
   const MEMBER_LIST = accounts.slice(2);
 
-  const MEMBER_COUNT = MEMBER_LIST.length + 1;
+  const MEMBER_COUNT = MEMBER_LIST.length;
   const DEFAULT_POT = consts.CONTRIBUTION_SIZE * MEMBER_COUNT;
 
   it("prevents re-entry attacks in withdraw", co(function* () {
@@ -24,8 +24,8 @@ contract('ROSCA reentry attack test', function(accounts) {
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
     let rosca = yield ROSCATest.new(
-        0  /* use ETH */,
-        consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, [attackContract.address],
+        0  /* use ETH */, 0 /* bidding ROSCA */,
+        consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, [accounts[0], attackContract.address],
         consts.SERVICE_FEE_IN_THOUSANDTHS, {from: accounts[0]});
 
     utils.increaseTime(consts.START_TIME_DELAY);

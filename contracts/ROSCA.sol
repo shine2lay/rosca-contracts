@@ -267,7 +267,7 @@ contract ROSCA {
     if (roscaType == typesOfROSCA.preOrderedROSCA) {
       // next one in the list will always be at index 0
       // because we keep the unpaid participants at positions [0..num_participants - current_round)
-      winnerAddress = memberAddresses[0]
+      winnerAddress = membersAddresses[0];
     }
     if (winnerAddress == 0) {
       // There was no bid in this round. Find an unpaid address for this epoch.
@@ -368,6 +368,7 @@ contract ROSCA {
     if (!isEthRosca && msg.value > 0) {  // token ROSCAs should not accept ETH
       throw;
     }
+
     uint256 value = (isEthRosca ? msg.value : tokenContract.allowance(msg.sender, address(this)));
     if (value == 0) {
       throw;
@@ -413,7 +414,7 @@ contract ROSCA {
    *   plus any past earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
-  function bid(uint256 bid) onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive onlyTraditionalROSCA external {
+  function bid(uint256 bid) onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive onlyBiddingROSCA external {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing
