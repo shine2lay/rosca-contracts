@@ -71,10 +71,6 @@ function checkForDelinquencyForUserInRound(userIndex, roundNum) {
   for (let i = 0; i < roundNum; i++) {
     totalDiscountToRoundNum += DISCOUNT_BY_ROUND[i]
   }
-  if (userIndex === 3) {
-    console.log(expectedCredit)
-    console.log(consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum))
-  }
   if (expectedCredit < consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum)) {
     return (consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum)) - expectedCredit
   }
