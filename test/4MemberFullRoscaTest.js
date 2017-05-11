@@ -65,6 +65,35 @@ function expectedContractBalanceUpToRound(roundNum) {
   return totalBalance * consts.CONTRIBUTION_SIZE;
 }
 
+function checkForDelinquencyForUserInRound(userIndex, roundNum) {
+  let expectedCredit = expectedCreditToDate(userIndex, roundNum)
+  let totalDiscountToRoundNum = 0
+  for (let i = 0; i < roundNum; i++) {
+    totalDiscountToRoundNum += DISCOUNT_BY_ROUND[i]
+  }
+  if (userIndex === 3) {
+    console.log(expectedCredit)
+    console.log(consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum))
+  }
+  if (expectedCredit < consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum)) {
+    return (consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum)) - expectedCredit
+  }
+  return 0;
+}
+
+function expectedTotalFeesUpToRound (roundNum) {
+  let theoreticalFee = consts.defaultPot() * roundNum
+
+  let delinquenciesAmount = 0
+  for (let i = 0; i < consts.memberCount(); i++) {
+    delinquenciesAmount += checkForDelinquencyForUserInRound(i, roundNum)
+  }
+
+  let balanceToCollectFees = theoreticalFee - delinquenciesAmount
+
+  return balanceToCollectFees / 1000 * consts.SERVICE_FEE_IN_THOUSANDTHS
+}
+
 function expectedCreditToDate(userIndex, currentRound) {
   let totalContribution = 0;
   for (let i = 0; i < currentRound; i++) {
@@ -148,8 +177,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     expectedContractBalance = expectedContractBalanceUpToRound(1);
     assert.equal(contract.balance, expectedContractBalance);
     // Total fees = theoretical fee (since no delinquency)
-    assert.equal(contract.totalFees, consts.defaultPot() * (contract.currentRound - 1)
-        / 1000 * consts.SERVICE_FEE_IN_THOUSANDTHS);
+    assert.equal(contract.totalFees, expectedTotalFeesUpToRound(1));
 
     assert.equal(contract.currentRound, 2); // currentRound value
     assert.isNotOk(yield rosca.getCurrentRosca().endOfROSCA.call());
@@ -207,9 +235,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     expectedContractBalance = expectedContractBalanceUpToRound(2);
     assert.equal(contract.balance, expectedContractBalance);
     // Only p3 is delinquent, in (1C - TD), and the fees should refelct that.
-    let theoreticalTotalFees = consts.defaultPot() * (contract.currentRound - 1);
-    assertWeiCloseTo(contract.totalFees, (theoreticalTotalFees - consts.CONTRIBUTION_SIZE + expectedTotalDiscounts) / 1000 *
-        consts.SERVICE_FEE_IN_THOUSANDTHS);
+    assertWeiCloseTo(contract.totalFees, expectedTotalFeesUpToRound(2));
 
     assert.equal(contract.currentRound, 3);
     assert.isNotOk(yield rosca.getCurrentRosca().endOfROSCA.call());
@@ -259,13 +285,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
 
     assertWeiCloseTo(contract.balance, expectedContractBalance);
     // totalFees == 3 * 4 = 12 - 1(p2) - 1(p3) = 10C == 0.1 C
-    let theoreticalTotalFees = consts.defaultPot() * (contract.currentRound - 1);
-    let p2Delinquency =
-        (contract.currentRound - 1) * consts.CONTRIBUTION_SIZE - contract.credits[2] - contractBefore.totalDiscounts;
-    let p3Delinquency =
-        (contract.currentRound - 1) * consts.CONTRIBUTION_SIZE - contract.credits[3] - contractBefore.totalDiscounts;
-    assertWeiCloseTo(contract.totalFees, (theoreticalTotalFees - p2Delinquency - p3Delinquency) / 1000 *
-        consts.SERVICE_FEE_IN_THOUSANDTHS);
+    assertWeiCloseTo(contract.totalFees, expectedTotalFeesUpToRound(3));
 
     assert.equal(contract.currentRound, 4); // currentRound value
     assert.isNotOk(yield rosca.getCurrentRosca().endOfROSCA.call());
