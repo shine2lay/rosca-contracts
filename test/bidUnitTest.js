@@ -93,7 +93,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         const roscaTest = yield ROSCATest.deployed();
 
         const MAX_NEXT_BID_RATIO = yield roscaTest.MAX_NEXT_BID_RATIO.call();
-        const NOT_LOW_ENOUGH_BID_TO_PLACE = consts.defaultPot() / 100 * MAX_NEXT_BID_RATIO + 100;
+        const NOT_LOW_ENOUGH_BID_TO_PLACE = consts.defaultPot() / 100 * MAX_NEXT_BID_RATIO + 1000;
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([

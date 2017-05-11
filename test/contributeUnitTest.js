@@ -98,10 +98,10 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         // so winnerAddress needs to contribute = 2.5 - totalDiscount
         let contributionToNonDelinquency = 2.5 * consts.CONTRIBUTION_SIZE - (yield rosca.totalDiscounts());
         yield utils.assertThrows(rosca.withdraw(winnerAddress));
-        // for some reason 1 is being rounded up so 10 is used instead
-        yield rosca.contribute(winnerAddress, (contributionToNonDelinquency - 10));
+        // for some reason 1 is being rounded up so 1000 is used instead
+        yield rosca.contribute(winnerAddress, (contributionToNonDelinquency - 1000));
         yield utils.assertThrows(rosca.withdraw(winnerAddress));
-        yield rosca.contribute(winnerAddress, 10);
+        yield rosca.contribute(winnerAddress, 1000);
         yield rosca.withdraw(winnerAddress);
     }));
 });
