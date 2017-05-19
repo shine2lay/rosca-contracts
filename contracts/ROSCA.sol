@@ -79,9 +79,9 @@ contract ROSCA {
   // ROSCA state
   // Currently, we support three different types of ROSCA
   // 0 : ROSCA where lowest bidder wins (Bidding ROSCA)
-  // 1 : ROSCA where winners are chosen at random (lottery ROSCA)
-  // 2 : ROSCA where winners are selected through a ordered list (pre-ordered ROSCA)
-  enum typesOfROSCA { biddingROSCA, lotteryROSCA, preOrderedROSCA }
+  // 1 : ROSCA where winners are chosen at random (random Selection ROSCA)
+  // 2 : ROSCA where winners are selected through a ordered list (pre-determined ROSCA)
+  enum typesOfROSCA { biddingROSCA, randomSelectionROSCA, preDeterminedROSCA }
   typesOfROSCA roscaType;
   bool internal endOfROSCA = false;
   bool internal forepersonSurplusCollected = false;
@@ -264,7 +264,7 @@ contract ROSCA {
     bool winnerSelectedThroughBid = (winnerAddress != 0);
     uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
     // for pre-ordered ROSCA, pick the next person in the list (delinquent or not)
-    if (roscaType == typesOfROSCA.preOrderedROSCA) {
+    if (roscaType == typesOfROSCA.preDeterminedROSCA) {
       winnerAddress = membersAddresses[currentRound - 1];
     }
     if (winnerAddress == 0) {
@@ -300,7 +300,7 @@ contract ROSCA {
     // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
     // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
     // next unpaid member).
-    if (roscaType != typesOfROSCA.preOrderedROSCA) {
+    if (roscaType != typesOfROSCA.preDeterminedROSCA) {
       swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
     }
 
