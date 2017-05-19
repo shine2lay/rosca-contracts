@@ -22,17 +22,18 @@ const WINNING_BID_PERCENT = [0.95, 0.90, 1, 1];
 // winners of each round by accountIndex
 const WINNER_BY_ROUND = [2, 1, 0, 3];
 
-// Individual discount
-const DISCOUNT_BY_ROUND = [
+// Discount for each individual members at the end of the round (after the winner is selected)
+// these are derived from the winnings bids of the corresponding rounds.
+const INDIVIDUAL_DISCOUNTS_FOR_ROUND = [
   utils.afterFee((1 - WINNING_BID_PERCENT[0])),
   utils.afterFee((1 - WINNING_BID_PERCENT[1])),
   utils.afterFee((1 - WINNING_BID_PERCENT[2])),
   utils.afterFee((1 - WINNING_BID_PERCENT[3])),
 ];
 
-// Each array represents user's contributions relative to consts.CONTRIBUTION_SIZE for each round
+// Each array represents user's contributions relative to CONTRIBUTION_SIZE for each round
 const CONTRIBUTIONS_PERCENT = [
-  [10, 1 - DISCOUNT_BY_ROUND[0], 1, 0],
+  [10, 1 - INDIVIDUAL_DISCOUNTS_FOR_ROUND[0], 1, 0],
   [1.2, 0.8, 0, 1],
   [1, 0, 0, 4],
   [1, 0, 1, 1],
@@ -41,8 +42,11 @@ const CONTRIBUTIONS_PERCENT = [
 // Each array represents expected user's withdrawal relative to consts.CONTRIBUTION_SIZE for each round
 const WITHDRAWAL_PERCENT = [
   [CONTRIBUTIONS_PERCENT[0][0] - 1, 0, 0, 0],
-  [0, 0, utils.afterFee(WINNING_BID_PERCENT[1] * 4) - 1 + DISCOUNT_BY_ROUND[1] + DISCOUNT_BY_ROUND[0], 0],
-  [0, utils.afterFee(WINNING_BID_PERCENT[0] * 4) - 1 + DISCOUNT_BY_ROUND[0], 0, 0],
+  [0, 0,
+    utils.afterFee(WINNING_BID_PERCENT[1] * 4) - 1 +
+    INDIVIDUAL_DISCOUNTS_FOR_ROUND[1] + INDIVIDUAL_DISCOUNTS_FOR_ROUND[0],
+  0],
+  [0, utils.afterFee(WINNING_BID_PERCENT[0] * 4) - 1 + INDIVIDUAL_DISCOUNTS_FOR_ROUND[0], 0, 0],
   [0, 0, 0, 0],
 ];
 
@@ -52,7 +56,7 @@ function assertCloseTo(actual, expected) {
   assert.closeTo(Math.abs(1 - actual / expected), 0, 0.0001, "actual: " + actual + ",expected: " + expected);
 }
 
-function expectedContractBalanceUpToRound(roundNum) {
+function expectedContractBalanceAtRound(roundNum) {
   let totalBalance = 0;
   for (let i = 0; i < roundNum; i++) {
     for (let userIndex = 0; userIndex < consts.memberCount(); userIndex++) {
@@ -67,7 +71,7 @@ function checkForDelinquencyForUserInRound(userIndex, roundNum) {
   let expectedCredit = expectedCreditToDate(userIndex, roundNum);
   let totalDiscount = 0;
   for (let i = 0; i < roundNum; i++) {
-    totalDiscount += DISCOUNT_BY_ROUND[i];
+    totalDiscount += INDIVIDUAL_DISCOUNTS_FOR_ROUND[i];
   }
   if (expectedCredit < consts.CONTRIBUTION_SIZE * (roundNum - totalDiscount)) {
     return (consts.CONTRIBUTION_SIZE * (roundNum - totalDiscount)) - expectedCredit;
@@ -75,7 +79,7 @@ function checkForDelinquencyForUserInRound(userIndex, roundNum) {
   return 0;
 }
 
-function expectedTotalFeesUpToRound(roundNum) {
+function expectedTotalFeesAtRound(roundNum) {
   let theoreticalFee = consts.defaultPot() * roundNum;
 
   let delinquenciesAmount = 0;
@@ -136,11 +140,11 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield rosca.contribute(2, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[2][0]);  // p2's credit == C
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-    yield rosca.roscaContract.startRound();
+    yield rosca.startRound();
     yield rosca.contribute(1, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[1][0]); // p1's credit = C * 1.2
     yield rosca.bid(2, consts.defaultPot()); // lowestBid = pot, winner = 2
     // foreperson should be allowed to withdraw the extra C * 9, new credit = contributionSize
-    yield rosca.roscaContract.withdraw(0);  // p0 withdraws overcontributions, credit should be C again
+    yield rosca.withdraw(0);  // p0 withdraws overcontributions, credit should be C again
     yield rosca.bid(1, consts.defaultPot() * WINNING_BID_PERCENT[0] * 1.04); // lowestBid = pot * 0.98, winner = 1
     yield rosca.bid(2, consts.defaultPot() * WINNING_BID_PERCENT[0]); // lowestBid = pot * 0.95, winner = 2
     yield rosca.contribute(3, consts.CONTRIBUTION_SIZE);  // p3's credit = contributionSize
@@ -148,7 +152,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
 
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-    yield rosca.roscaContract.startRound();
+    yield rosca.startRound();
 
     let contract = yield rosca.getContractStatus();
 
@@ -162,16 +166,16 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assert.equal(contract.credits[3], expectedCreditToDate(3, 1));
 
     assertCloseTo(contract.totalDiscounts,
-        DISCOUNT_BY_ROUND[0] * consts.CONTRIBUTION_SIZE);
+        INDIVIDUAL_DISCOUNTS_FOR_ROUND[0] * consts.CONTRIBUTION_SIZE);
 
     // This round contract started with 0.
     // Participants contributed 10C + C + 1.2C + C == 13.2C.
     // p0 withdrew 10C - 1C == 9C.
     // Expected balance is thus 13.2C - 9C == 4.2C.
-    expectedContractBalance = expectedContractBalanceUpToRound(1);
+    expectedContractBalance = expectedContractBalanceAtRound(1);
     assert.equal(contract.balance, expectedContractBalance);
     // Total fees = theoretical fee (since no delinquency)
-    assert.equal(contract.totalFees, expectedTotalFeesUpToRound(1));
+    assert.equal(contract.totalFees, expectedTotalFeesAtRound(1));
 
     assert.equal(contract.currentRound, 2); // currentRound value
     assert.isNotOk(yield rosca.getCurrentRosca().endOfROSCA.call());
@@ -222,15 +226,15 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assert.equal(contract.credits[2], expectedCreditToDate(2, 2));
     assert.equal(contract.credits[3], consts.CONTRIBUTION_SIZE); // not in good standing
     // TD == OLD_TD + (consts.defaultPot() - POT_WON) * NET_REWARD_RATIO / memberCount
-    let expectedTotalDiscounts = (DISCOUNT_BY_ROUND[0] + DISCOUNT_BY_ROUND[1]) * consts.CONTRIBUTION_SIZE;
+    let expectedTotalDiscounts = (INDIVIDUAL_DISCOUNTS_FOR_ROUND[0] + INDIVIDUAL_DISCOUNTS_FOR_ROUND[1]) * consts.CONTRIBUTION_SIZE;
     assertCloseTo(contract.totalDiscounts, expectedTotalDiscounts);
 
     // Contributions were 0.8C + 1C - totalDiscount from last Round .
     // Thus we expect credit to be lastRound's balance + 0.8 + 1 - totalDiscount from last round - balance withdrawn
-    expectedContractBalance = expectedContractBalanceUpToRound(2);
+    expectedContractBalance = expectedContractBalanceAtRound(2);
     assert.equal(contract.balance, expectedContractBalance);
     // Only p3 is delinquent, in (1C - TD), and the fees should refelct that.
-    assertCloseTo(contract.totalFees, expectedTotalFeesUpToRound(2));
+    assertCloseTo(contract.totalFees, expectedTotalFeesAtRound(2));
 
     assert.equal(contract.currentRound, 3);
     assert.isNotOk(yield rosca.getCurrentRosca().endOfROSCA.call());
@@ -276,11 +280,11 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assertCloseTo(contract.totalDiscounts, contractBefore.totalDiscounts);
 
     // Last we checked contractBalance (in this test) it was 0.496C. With 2 contributions of C each, we get to 2.424C.
-    expectedContractBalance = expectedContractBalanceUpToRound(3);
+    expectedContractBalance = expectedContractBalanceAtRound(3);
 
     assertCloseTo(contract.balance, expectedContractBalance);
     // totalFees == 3 * 4 = 12 - 1(p2) - 1(p3) = 10C == 0.1 C
-    assertCloseTo(contract.totalFees, expectedTotalFeesUpToRound(3));
+    assertCloseTo(contract.totalFees, expectedTotalFeesAtRound(3));
 
     assert.equal(contract.currentRound, 4); // currentRound value
     assert.isNotOk(yield rosca.getCurrentRosca().endOfROSCA.call());
@@ -332,7 +336,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assertCloseTo(contract.totalDiscounts, contractBefore.totalDiscounts);
 
     // total deposit = 6 * contribution , no withdrawal
-    expectedContractBalance = expectedContractBalanceUpToRound(4);
+    expectedContractBalance = expectedContractBalanceAtRound(4);
 
     let theoreticalTotalFees = consts.defaultPot() * contract.currentRound;
     let p3Delinquency =
