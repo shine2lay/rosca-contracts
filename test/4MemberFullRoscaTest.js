@@ -138,11 +138,11 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield rosca.contribute(2, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[2][0]);  // p2's credit == C
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-    yield rosca.rosca.startRound();
+    yield rosca.roscaContract.startRound();
     yield rosca.contribute(1, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[1][0]); // p1's credit = C * 1.2
     yield rosca.bid(2, consts.defaultPot()); // lowestBid = pot, winner = 2
     // foreperson should be allowed to withdraw the extra C * 9, new credit = contributionSize
-    yield rosca.rosca.withdraw(0);  // p0 withdraws overcontributions, credit should be C again
+    yield rosca.roscaContract.withdraw(0);  // p0 withdraws overcontributions, credit should be C again
     yield rosca.bid(1, consts.defaultPot() * WINNING_BID_PERCENT[0] * 1.04); // lowestBid = pot * 0.98, winner = 1
     yield rosca.bid(2, consts.defaultPot() * WINNING_BID_PERCENT[0]); // lowestBid = pot * 0.95, winner = 2
     yield rosca.contribute(3, consts.CONTRIBUTION_SIZE);  // p3's credit = contributionSize
@@ -150,7 +150,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
 
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-    yield rosca.rosca.startRound();
+    yield rosca.roscaContract.startRound();
 
     let contract = yield rosca.getContractStatus();
 
