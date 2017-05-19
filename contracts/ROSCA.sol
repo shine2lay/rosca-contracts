@@ -265,9 +265,7 @@ contract ROSCA {
     uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
     // for pre-ordered ROSCA, pick the next person in the list (delinquent or not)
     if (roscaType == typesOfROSCA.preOrderedROSCA) {
-      // next one in the list will always be at index 0
-      // because we keep the unpaid participants at positions [0..num_participants - current_round)
-      winnerAddress = membersAddresses[0];
+      winnerAddress = membersAddresses[currentRound - 1];
     }
     if (winnerAddress == 0) {
       // There was no bid in this round. Find an unpaid address for this epoch.
@@ -302,7 +300,9 @@ contract ROSCA {
     // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
     // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
     // next unpaid member).
-    swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
+    if (roscaType != typesOfROSCA.preOrderedROSCA) {
+      swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
+    }
 
     uint256 currentRoundTotalDiscounts = removeFees(contributionSize * membersAddresses.length - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;

@@ -116,7 +116,7 @@ contract('fees unit test', function(accounts) {
     assert.equal(fees, expectedFeesFrom(consts.defaultPot() * consts.memberCount()));  // 2 rounds, 2 participants.
   }));
 
-  it('does not charge overcontributions that do not get used in the ROSCA and do not get rosca.withdrawn', co(function* () {
+  it('does not charge overcontributions that do not get used in the ROSCA and do not get withdrawn', co(function* () {
     const BID_TO_PLACE = 0.9 * consts.defaultPot()
     const INDIVIDUAL_DISCOUNT = (consts.defaultPot() - BID_TO_PLACE) / consts.memberCount()
     // In this test, accounts[0] rosca.contributes 1.5C in round 1, and another 1C in round 2.
@@ -149,7 +149,7 @@ contract('fees unit test', function(accounts) {
     assert.equal(fees, expectedFeesFrom(consts.defaultPot() * consts.memberCount()));  // 2 rounds, 2 participants.
   }));
 
-  it('does not charge overcontributions that do not get used in the ROSCA and do get rosca.withdrawn', co(function* () {
+  it('does not charge overcontributions that do not get used in the ROSCA and do get withdrawn', co(function* () {
     const BID_TO_PLACE = 0.9 * consts.defaultPot()
     const INDIVIDUAL_DISCOUNT = (consts.defaultPot() - BID_TO_PLACE) / consts.memberCount()
     // In this test, accounts[0] rosca.contributes 1.5C in round 1, then rosca.withdraws, then rosca.contributes another 1C in round 2 .
