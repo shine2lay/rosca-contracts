@@ -12,7 +12,7 @@ module.exports = {
     return memberList;
   },
   setMemberList: function(accounts, optSliceIndex) {
-    optSliceIndex = optSliceIndex || 4
+    optSliceIndex = optSliceIndex || 4;
     memberList = accounts.slice(1, optSliceIndex);
   },
   memberCount: function() {

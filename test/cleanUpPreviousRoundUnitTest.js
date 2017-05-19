@@ -5,7 +5,7 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
 let roscaHelper;
 
@@ -15,7 +15,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     });
 
     beforeEach(co(function* () {
-      roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
+      roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
     }));
 
     it("checks if totalDiscount grows when lowestBid < consts.defaultPot()", co(function* () {
@@ -80,7 +80,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         winner = yield roscaHelper.getUser(log.args.winnerAddress);
 
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
-        assert.equal(winner[0], consts.CONTRIBUTION_SIZE + utils.afterFee(consts.defaultPot(), consts.SERVICE_FEE_IN_THOUSANDTHS),  // credit
+        assert.equal(winner[0], consts.CONTRIBUTION_SIZE +
+          utils.afterFee(consts.defaultPot(), consts.SERVICE_FEE_IN_THOUSANDTHS),  // credit
             "lowestBid is not deposited into winner's credit"); // winner.credit
         assert.isOk(winner[3], "a non member was chosen when there were no bids");
     }));
@@ -91,7 +92,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         // in 2nd round check that one of the other two users (delinquents) get the pot
         let memberList = [accounts[1], accounts[2]];
 
-        let rosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA(memberList)))
+        let rosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA(memberList)));
 
         let pot = (memberList.length + 1) * consts.CONTRIBUTION_SIZE;
         utils.increaseTime(consts.START_TIME_DELAY);

@@ -8,8 +8,8 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
-  
+let ROSCAHelper = require('./utils/roscaHelper');
+
 let ethRoscaHelper;
 let erc20RoscaHelper;
 
@@ -19,8 +19,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     });
 
     beforeEach(co(function* () {
-      ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
-      erc20RoscaHelper = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)))
+      ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
+      erc20RoscaHelper = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)));
     }));
 
     it("Throws when calling withdraw from a non-member", co(function* () {
@@ -77,7 +77,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield roscaHelper.bid(2, consts.defaultPot());
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield roscaHelper.startRound(); // 2nd Member will be entitled to consts.defaultPot() which is greater than consts.CONTRIBUTION_SIZE
+        // 2nd Member will be entitled to consts.defaultPot() which is greater than consts.CONTRIBUTION_SIZE
+        yield roscaHelper.startRound();
 
         let creditBefore = yield roscaHelper.userCredit(2);
         let memberBalanceBefore = yield roscaHelper.getBalance(2, tokenContract);
@@ -203,7 +204,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
          // In this 2-person rosca test, both p0 and p1 are delinquent and pay only 0.5C each in the first round.
          // We check that the winner cannot withdraw their money in the next round, but once they pay up, they can.
          let members = [accounts[1]];
-         let ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)))
+         let ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)));
 
          utils.increaseTime(consts.START_TIME_DELAY);
          yield Promise.all([
@@ -230,7 +231,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         // We check that the winner cannot withdraw their money until rosca has ended.
         // After rosca ended, we check that the winner can only withdraw the amount he contributed.
         let members = [accounts[1]];
-        let ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)))
+        let ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)));
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([

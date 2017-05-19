@@ -5,7 +5,7 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
 let roscaHelper;
 
@@ -15,7 +15,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
     });
 
     beforeEach(co(function* () {
-      roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
+      roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
     }));
 
     const NET_REWARDS_RATIO = ((1000 - consts.SERVICE_FEE_IN_THOUSANDTHS) / 1000);
@@ -66,7 +66,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         assert.equal(balance, expectedBalance);
         utils.assertThrows(roscaHelper.withdraw(1));
 
-        // contributed extra by consts.CONTRIBUTION_SIZE, when we try to withdraw, we should get consts.CONTRIBUTION_SIZE
+        // contributed extra by CONTRIBUTION_SIZE, when we try to withdraw, we should get CONTRIBUTION_SIZE
         let EXTRA_CONTRIBUTION = 2e18;
         let debt = - balance;
         yield roscaHelper.contribute(1, debt + EXTRA_CONTRIBUTION);
@@ -82,7 +82,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         // 3 member rosca, p1 contribute 5 * consts.CONTRIBUTION_SIZE and win round 1
         let memberList = [accounts[1], accounts[2]];
         let pot = (memberList.length + 1) * consts.CONTRIBUTION_SIZE;
-        let roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(memberList)))
+        let roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(memberList)));
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
@@ -107,7 +107,8 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
 
         let balance = yield roscaHelper.getParticipantBalance(winnerAddress);
 
-        // currentRound is 3 so expected balance = 3 * consts.CONTRIBUTION_SIZE - 0.5 * consts.CONTRIBUTION_SIZE(already contributed)
+        // currentRound is 3 so expected balance = 3 * consts.CONTRIBUTION_SIZE -
+        // 0.5 * consts.CONTRIBUTION_SIZE(already contributed)
         let expectedBalance = - 2.5 * consts.CONTRIBUTION_SIZE;
         assert.equal(balance, expectedBalance);
         utils.assertThrows(roscaHelper.withdraw(winnerAddress));

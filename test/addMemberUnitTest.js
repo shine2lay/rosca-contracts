@@ -3,9 +3,8 @@
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
-let ROSCATest = artifacts.require('ROSCATest.sol');
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
 let roscaHelper;
 
@@ -16,7 +15,7 @@ contract('ROSCA addMember Unit Test', function(accounts) {
     });
 
     beforeEach(co(function* () {
-        roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
+        roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
     }));
 
     it("throws when adding an existing member", co(function* () {

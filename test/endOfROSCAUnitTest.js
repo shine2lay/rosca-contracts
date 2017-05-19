@@ -2,10 +2,9 @@
 
 let assert = require('chai').assert;
 let co = require("co").wrap;
-let Promise = require("bluebird");
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
 let ethRoscaHelper;
 let erc20RoscaHelper;
@@ -16,8 +15,8 @@ contract('end of ROSCA unit test', function(accounts) {
     });
 
     beforeEach(co(function* () {
-      ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
-      erc20RoscaHelper = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)))
+      ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
+      erc20RoscaHelper = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)));
     }));
 
     // Runs the ROSCA, contributing funds as required, but never withdrawing - so that

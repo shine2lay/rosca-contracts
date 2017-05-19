@@ -7,9 +7,8 @@ let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
-let ROSCATest = artifacts.require('ROSCATest.sol');
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
 let ethRoscaHelper;
 let erc20RoscaHelper;
@@ -20,8 +19,8 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     });
 
     beforeEach(co(function* () {
-      ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
-      erc20RoscaHelper = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)))
+      ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
+      erc20RoscaHelper = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)));
     }));
 
     it("throws when calling contribute from a non-member", co(function* () {
@@ -73,7 +72,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     it("checks delinquent winner who contributes the right amount no longer considered delinquent",
       co(function* () {
         let members = [accounts[1], accounts[2]];
-        let roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)))
+        let roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)));
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([

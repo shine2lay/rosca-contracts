@@ -5,9 +5,8 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
-
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
 let roscaHelper;
 
@@ -17,7 +16,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     });
 
     beforeEach(co(function* () {
-      roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
+      roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
     }));
 
     it("Throws when calling bid with valid parameters before ROSCA starts", co(function* () {
@@ -34,7 +33,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("Throws Placing bid less than 65% of the Pot", co(function* () {
-        const MIN_DISTRIBUTION_PERCENT = yield roscaHelper.MIN_DISTRIBUTION_PERCENT();
+        const MIN_DISTRIBUTION_PERCENT = yield roscaHelper.MIN_DISTRIBUTION_PERCENT(); // eslint-disable-line
 
         const BID_TO_PLACE = consts.defaultPot() * (MIN_DISTRIBUTION_PERCENT / 100 * 0.99);
 
@@ -111,7 +110,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
         yield roscaHelper.startRound();
 
         let p1Credit = yield roscaHelper.userCredit(1);
-        let expectedCredit = consts.CONTRIBUTION_SIZE + utils.afterFee(consts.defaultPot(), consts.SERVICE_FEE_IN_THOUSANDTHS);
+        let expectedCredit = consts.CONTRIBUTION_SIZE +
+          utils.afterFee(consts.defaultPot(), consts.SERVICE_FEE_IN_THOUSANDTHS);
 
         assert.equal(p1Credit, expectedCredit,
             "original bidder should have won due to insufficient gap in the second bid");

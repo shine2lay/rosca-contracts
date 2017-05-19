@@ -7,10 +7,8 @@ let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
-let ROSCATest = artifacts.require('ROSCATest.sol');
-let ExampleToken = artifacts.require('test/ExampleToken.sol');
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
 let expectedContractBalance;
 let p0ExpectedCredit;
@@ -30,7 +28,7 @@ const DISCOUNT_BY_ROUND = [
   utils.afterFee((1 - WINNING_BID_PERCENT[1])),
   utils.afterFee((1 - WINNING_BID_PERCENT[2])),
   utils.afterFee((1 - WINNING_BID_PERCENT[3])),
-]
+];
 
 // Each array represents user's contributions relative to consts.CONTRIBUTION_SIZE for each round
 const CONTRIBUTIONS_PERCENT = [
@@ -55,48 +53,48 @@ function assertWeiCloseTo(actual, expected) {
 }
 
 function expectedContractBalanceUpToRound(roundNum) {
-  let totalBalance = 0
+  let totalBalance = 0;
   for (let i = 0; i < roundNum; i++) {
     for (let userIndex = 0; userIndex < consts.memberCount(); userIndex++) {
-      totalBalance += CONTRIBUTIONS_PERCENT[userIndex][i]
-      totalBalance -= WITHDREW_PERCENT[userIndex][i]
+      totalBalance += CONTRIBUTIONS_PERCENT[userIndex][i];
+      totalBalance -= WITHDREW_PERCENT[userIndex][i];
     }
   }
   return totalBalance * consts.CONTRIBUTION_SIZE;
 }
 
 function checkForDelinquencyForUserInRound(userIndex, roundNum) {
-  let expectedCredit = expectedCreditToDate(userIndex, roundNum)
-  let totalDiscountToRoundNum = 0
+  let expectedCredit = expectedCreditToDate(userIndex, roundNum);
+  let totalDiscountToRoundNum = 0;
   for (let i = 0; i < roundNum; i++) {
-    totalDiscountToRoundNum += DISCOUNT_BY_ROUND[i]
+    totalDiscountToRoundNum += DISCOUNT_BY_ROUND[i];
   }
   if (expectedCredit < consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum)) {
-    return (consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum)) - expectedCredit
+    return (consts.CONTRIBUTION_SIZE * (roundNum - totalDiscountToRoundNum)) - expectedCredit;
   }
   return 0;
 }
 
-function expectedTotalFeesUpToRound (roundNum) {
-  let theoreticalFee = consts.defaultPot() * roundNum
+function expectedTotalFeesUpToRound(roundNum) {
+  let theoreticalFee = consts.defaultPot() * roundNum;
 
-  let delinquenciesAmount = 0
+  let delinquenciesAmount = 0;
   for (let i = 0; i < consts.memberCount(); i++) {
-    delinquenciesAmount += checkForDelinquencyForUserInRound(i, roundNum)
+    delinquenciesAmount += checkForDelinquencyForUserInRound(i, roundNum);
   }
 
-  let balanceToCollectFees = theoreticalFee - delinquenciesAmount
+  let balanceToCollectFees = theoreticalFee - delinquenciesAmount;
 
-  return balanceToCollectFees / 1000 * consts.SERVICE_FEE_IN_THOUSANDTHS
+  return balanceToCollectFees / 1000 * consts.SERVICE_FEE_IN_THOUSANDTHS;
 }
 
 function expectedCreditToDate(userIndex, currentRound) {
   let totalContribution = 0;
   for (let i = 0; i < currentRound; i++) {
-    totalContribution += CONTRIBUTIONS_PERCENT[userIndex][i]
-    totalContribution -= WITHDREW_PERCENT[userIndex][i]
+    totalContribution += CONTRIBUTIONS_PERCENT[userIndex][i];
+    totalContribution -= WITHDREW_PERCENT[userIndex][i];
     if (WINNER_BY_ROUND[i] === userIndex) {
-      totalContribution += utils.afterFee(WINNING_BID_PERCENT[i] * consts.memberCount())
+      totalContribution += utils.afterFee(WINNING_BID_PERCENT[i] * consts.memberCount());
     }
   }
   return totalContribution * consts.CONTRIBUTION_SIZE;
@@ -106,13 +104,13 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
   const NET_REWARDS_RATIO = ((1000 - consts.SERVICE_FEE_IN_THOUSANDTHS) / 1000);
 
   before(function() {
-    consts.setMemberList(accounts)
+    consts.setMemberList(accounts);
   });
 
   beforeEach(co(function* () {
-    erc20Rosca = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)))
-    ethRosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
-  }))
+    erc20Rosca = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)));
+    ethRosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
+  }));
 
   // In the different tests' comments:
   // C is the consts.CONTRIBUTION_SIZE
@@ -203,7 +201,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     // Foreperson only pays the extra money required, taking into account discount from previous round.
     // Foreperson's credit is = C (from before) + C - totalDiscount
     yield rosca.contribute(0, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[0][1]);
-    yield rosca.bid(0, consts.defaultPot() * WINNING_BID_PERCENT[1] * 1.05); // lowestBid = Pot * 0.95, winnerAddress = foreman
+    yield rosca.bid(0, consts.defaultPot() * WINNING_BID_PERCENT[1] * 1.05); // lowestBid = Pot * 0.95, winner = 0
     yield rosca.bid(1, consts.defaultPot() * WINNING_BID_PERCENT[1]); // lowestBid = Pot * 0.90, winner = 1
     yield utils.assertThrows(rosca.bid(2, consts.defaultPot() * 0.75));  // 2 already won
     yield utils.assertThrows(rosca.bid(3, consts.defaultPot() * 0.75));  // 3 is not in good standing
@@ -217,7 +215,8 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     // Note that all credits are actually 2C more than participants can draw (neglecting totalDiscounts).
     // Total discounts by now is 0.15P / consts.memberCount().
 
-    // assert.equal(contract.credits[0], 2 * consts.CONTRIBUTION_SIZE - consts.defaultPot() * 0.05 / consts.memberCount() * NET_REWARDS_RATIO);
+    // assert.equal(contract.credits[0], 2 * consts.CONTRIBUTION_SIZE -
+    // consts.defaultPot() * 0.05 / consts.memberCount() * NET_REWARDS_RATIO);
     assert.equal(contract.credits[0], expectedCreditToDate(0, 2));
     assertWeiCloseTo(contract.credits[1], expectedCreditToDate(1, 2));
     assert.equal(contract.credits[2], expectedCreditToDate(2, 2));
@@ -305,7 +304,8 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
       rosca.contribute(1, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[1][3]),
       // p3 is still missing a contribution from 2nd period, so still not in good standing
       rosca.contribute(3, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[3][3]),
-      rosca.contribute(2, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[2][3]), // this will allow extra funds to be leftover at the end
+      // this will allow extra funds to be leftover at the end
+      rosca.contribute(2, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[2][3]),
     ]);
 
     // nobody can rosca.bid now - p0, p1, p2 already won. p3 is not in good standing.
@@ -339,7 +339,8 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
         (contract.currentRound * consts.CONTRIBUTION_SIZE + consts.defaultPot() * NET_REWARDS_RATIO) -
         contract.credits[3] - contractBefore.totalDiscounts;
 
-    assertWeiCloseTo(contract.totalFees, (theoreticalTotalFees - p3Delinquency) / 1000 * consts.SERVICE_FEE_IN_THOUSANDTHS);
+    assertWeiCloseTo(contract.totalFees,
+      (theoreticalTotalFees - p3Delinquency) / 1000 * consts.SERVICE_FEE_IN_THOUSANDTHS);
 
     assert.equal(contract.currentRound, 4); // currentRound value
     // End of Rosca has been reached
@@ -354,7 +355,8 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assertWeiCloseTo(contractBefore.balance - contract.balance, expectedCreditToDate(0, 4) -
         (contractBefore.currentRound * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts));
     // last rounded ended with contract.balance == 2.1695. So it should now have (2.1695 - 0.7425C) == 1.427C
-    expectedContractBalance -= p0ExpectedCredit - (contractBefore.currentRound * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts);
+    expectedContractBalance -= p0ExpectedCredit -
+      (contractBefore.currentRound * consts.CONTRIBUTION_SIZE - contractBefore.totalDiscounts);
     assertWeiCloseTo(contract.balance, expectedContractBalance);
     assert.equal(contract.credits[0], consts.defaultPot() - contractBefore.totalDiscounts);
 
