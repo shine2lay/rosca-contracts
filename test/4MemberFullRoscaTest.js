@@ -117,9 +117,9 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
   }));
 
   // In the different tests' comments:
-  // C is the consts.CONTRIBUTION_SIZE
-  // P is the consts.defaultPot()
-  // MC is consts.memberCount() == 4
+  // C is the CONTRIBUTION_SIZE
+  // P is the defaultPot
+  // MC is memberCount == 4
   // NR is NET_REWARDS
 
   function* testPreRosca() {
@@ -189,8 +189,6 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     // potWon - contribution(new round contribution) + totalDiscount;
     // we check how much was withdrawn indirectly, by checking how much contract's balance was reduced,
     // to avoid factoring in gas costs paid by p2.
-    /* let expectedWithdrawalBalance = utils.afterFee(consts.defaultPot() * WINNING_BID_PERCENT[0]) -
-        consts.CONTRIBUTION_SIZE + contractBefore.totalDiscounts; */
     let expectedWithdrawalBalance = WITHDRAWAL_PERCENT[2][1] * consts.CONTRIBUTION_SIZE;
     yield rosca.withdraw(2);
 
@@ -241,7 +239,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
   }
 
   function* test3rdRound() {
-    // 3rd round: everyone but 2 contributes, nobody puts a rosca.bid"
+    // 3rd round: everyone but 2 contributes, nobody puts a rosca.bid
 
     let contractBefore = yield rosca.getContractStatus();
     yield rosca.withdraw(1);
@@ -291,7 +289,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
   }
 
   function* test4thRound() {
-    // 4th round (last): nodoby rosca.bids and p3, the only non-winner, can't win as he's not in good
+    // 4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good
     // standing, p0 tries to withraw more than contract's balance
     let contractBefore = yield rosca.getContractStatus();
     yield rosca.withdraw(0);
@@ -324,7 +322,6 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield rosca.startRound();
     // No one wins this round because the only non-winner (p3) is not in good standing.
     contract = yield rosca.getContractStatus();
-    // console.log(WITHDREW_PERCENT)
     // Note that all credits are actually 3C more than participants can draw (neglecting totalDiscounts).
     assertCloseTo(contract.credits[0], expectedCreditToDate(0, 4));
     assertCloseTo(contract.credits[1], expectedCreditToDate(1, 4));
