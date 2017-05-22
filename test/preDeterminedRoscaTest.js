@@ -1,6 +1,5 @@
 "use strict";
 
-let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
@@ -24,7 +23,7 @@ contract('Pre-Ordered ROSCA Test', function(accounts) {
     yield rosca.startRound()
 
     yield utils.assertThrows(rosca.bid(0, VALID_BID))
-    yield rosca.contribute(0, consts.CONTRIBUTION_SIZE) // p0 should be allowed to bid in bidding ROSCA after contribution
+    yield rosca.contribute(0, consts.CONTRIBUTION_SIZE)
     yield utils.assertThrows(rosca.bid(0, VALID_BID))
   }));
 

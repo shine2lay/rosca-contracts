@@ -81,7 +81,7 @@ contract ROSCA {
   // 0 : ROSCA where lowest bidder wins (Bidding ROSCA)
   // 1 : ROSCA where winners are chosen at random (random Selection ROSCA)
   // 2 : ROSCA where winners are selected through a ordered list (pre-determined ROSCA)
-  enum typesOfROSCA { biddingROSCA, randomSelectionROSCA, preDeterminedROSCA }
+  enum typesOfROSCA { BIDDING_ROSCA, RANDOM_SELECTION_ROSCA, PRE_DETERMINED_ROSCA }
   typesOfROSCA roscaType;
   bool internal endOfROSCA = false;
   bool internal forepersonSurplusCollected = false;
@@ -162,8 +162,8 @@ contract ROSCA {
     _;
   }
 
-  modifier onlyBiddingROSCA {
-    if (roscaType != typesOfROSCA.biddingROSCA) {
+  modifier onlyBIDDING_ROSCA {
+    if (roscaType != typesOfROSCA.BIDDING_ROSCA) {
       throw;
     }
     _;
@@ -264,7 +264,7 @@ contract ROSCA {
     bool winnerSelectedThroughBid = (winnerAddress != 0);
     uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
     // for pre-ordered ROSCA, pick the next person in the list (delinquent or not)
-    if (roscaType == typesOfROSCA.preDeterminedROSCA) {
+    if (roscaType == typesOfROSCA.PRE_DETERMINED_ROSCA) {
       winnerAddress = membersAddresses[currentRound - 1];
     }
     if (winnerAddress == 0) {
@@ -300,7 +300,7 @@ contract ROSCA {
     // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
     // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
     // next unpaid member).
-    if (roscaType != typesOfROSCA.preDeterminedROSCA) {
+    if (roscaType != typesOfROSCA.PRE_DETERMINED_ROSCA) {
       swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
     }
 
@@ -414,7 +414,7 @@ contract ROSCA {
    *   plus any past earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
-  function bid(uint256 bid) onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive onlyBiddingROSCA external {
+  function bid(uint256 bid) onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive onlyBIDDING_ROSCA external {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing
