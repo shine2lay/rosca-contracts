@@ -12,20 +12,19 @@ module.exports = {
     return memberList;
   },
   setMemberList: function(accounts, optSliceIndex) {
-    optSliceIndex = optSliceIndex || 4
-    memberList = accounts.slice(0, optSliceIndex);
+    optSliceIndex = optSliceIndex || 4;
+    memberList = accounts.slice(1, optSliceIndex);
   },
   memberCount: function() {
     if(!memberList) {
       throw new Error('Member list needs to be set first before calling MEMBER_COUNT');
     }
 
-    return memberList.length;
+    return memberList.length + 1;
   },
   defaultPot: function() {
     return (this.CONTRIBUTION_SIZE * this.memberCount());
   },
   SERVICE_FEE_IN_THOUSANDTHS: 2,
   START_TIME_DELAY: 10,
-  ROSCA_TYPE: 0,
 };

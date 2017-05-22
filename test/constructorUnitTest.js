@@ -14,12 +14,12 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         consts.setMemberList(accounts);
     });
 
-    beforeEach(co(function* () {
+    beforeEach(function() {
       utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
       latestBlock = web3.eth.getBlock("latest");
       blockTime = latestBlock.timestamp;
-    }));
+    });
 
     it("Throws if consts.ROUND_PERIOD_IN_SECS == 0", co(function* () {
         yield utils.assertThrows(ROSCATest.new(
@@ -45,7 +45,8 @@ contract('ROSCA constructor Unit Test', function(accounts) {
 
         yield utils.assertThrows(ROSCATest.new(
             0 /* use ETH */,
-            consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, consts.memberList(),
+            consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
+            blockTime + consts.START_TIME_DELAY, consts.memberList(),
             MAX_FEE.add(1)), "contract creation successful");
     }));
 
@@ -53,8 +54,9 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         // Note we only check ETH ROSCA creation as the constructor simply does not care
         // about whether or not ROSCA uses a token contract.
         let rosca = yield ROSCATest.new(
-            0 /* use ETH */, 0 /* bidding ROSCA */,
-            consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, consts.memberList(),
+            0 /* use ETH */,
+            consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
+            blockTime + consts.START_TIME_DELAY, consts.memberList(),
             consts.SERVICE_FEE_IN_THOUSANDTHS);
 
         if (!rosca) {
