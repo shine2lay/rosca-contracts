@@ -182,22 +182,22 @@ roscaHelper.prototype.withdrawAndGetWithdrewAmount = function* (userIndexOrAddre
   yield this.withdraw(user);
   let contractBalanceAfter = yield this.getBalance(rosca.address);
 
-  return contractBalanceBefore - contractBalanceAfter
-}
+  return contractBalanceBefore - contractBalanceAfter;
+};
 
 roscaHelper.prototype.getParticipantInfo = function(userIndexOrAddress, optRosca) {
   let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
   let rosca = optRosca || this.rosca;
 
   return rosca.members.call(user);
-}
+};
 
 roscaHelper.prototype.getContractStatus = co(function* (optRosca) {
-  let rosca = optRosca || this.rosca;
+  let rosca = optRosca || this.rosca; // eslint-disable-line
 
-  let memberInfos = []
+  let memberInfos = [];
   for (let i = 0; i < consts.memberCount(); i++) {
-    memberInfos.push(yield this.userCredit(i));
+    memberInfos.push(yield this.userCredit(i)); // eslint-disable-line
   }
 
   let results = yield Promise.all([
