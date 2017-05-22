@@ -253,11 +253,11 @@ contract ROSCA {
     // next unpaid member).
     swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
 
-    payOutWinner();
+    creditWinner();
     recalculateTotalFees();
   }
 
-  function payOutWinner() internal {
+  function creditWinner() internal {
     uint256 currentRoundTotalDiscounts = removeFees(contributionSize * membersAddresses.length - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
     members[winnerAddress].credit += removeFees(lowestBid);
