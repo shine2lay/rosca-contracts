@@ -128,18 +128,6 @@ roscaHelper.prototype.tokenContract = function(optRosca) {
   return rosca.tokenContract.call();
 };
 
-roscaHelper.prototype.withdrawAndGetWithdrewAmount = function* (userIndexOrAddress, optRosca) {
-  let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
-  let rosca = optRosca || this.roscaContract;
-
-  let contractBalanceBefore = yield this.getBalance(rosca.address);
-
-  yield this.withdraw(user);
-  let contractBalanceAfter = yield this.getBalance(rosca.address);
-
-  return contractBalanceBefore - contractBalanceAfter;
-};
-
 roscaHelper.prototype.getParticipantInfo = function(userIndexOrAddress, optRosca) {
   let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
   let rosca = optRosca || this.roscaContract;
@@ -175,7 +163,7 @@ roscaHelper.prototype.getContractStatus = co(function* (optRosca) {
 
 roscaHelper.prototype.withdrawAndGetWithdrewAmount = function* (userIndexOrAddress, optRosca) {
   let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
-  let rosca = optRosca || this.rosca;
+  let rosca = optRosca || this.roscaContract;
 
   let contractBalanceBefore = yield this.getBalance(rosca.address);
 
@@ -187,13 +175,13 @@ roscaHelper.prototype.withdrawAndGetWithdrewAmount = function* (userIndexOrAddre
 
 roscaHelper.prototype.getParticipantInfo = function(userIndexOrAddress, optRosca) {
   let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
-  let rosca = optRosca || this.rosca;
+  let rosca = optRosca || this.roscaContract;
 
   return rosca.members.call(user);
 };
 
 roscaHelper.prototype.getContractStatus = co(function* (optRosca) {
-  let rosca = optRosca || this.rosca; // eslint-disable-line
+  let rosca = optRosca || this.roscaContract; // eslint-disable-line
 
   let memberInfos = [];
   for (let i = 0; i < consts.memberCount(); i++) {
