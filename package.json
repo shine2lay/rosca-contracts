@@ -1,12 +1,13 @@
 {
   "name": "wetrust-rosca-contract",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "ROSCA contract for Ethereum",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
   "dependencies": {
+    "fs": "0.0.1-security",
     "path": "^0.12.7",
     "solc": "^0.4.9"
   },
