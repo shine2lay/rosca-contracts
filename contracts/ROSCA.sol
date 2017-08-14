@@ -83,14 +83,14 @@ contract ROSCA {
   // 2 : ROSCA where winners are selected through a ordered list (pre-determined ROSCA)
   enum typesOfROSCA { BIDDING_ROSCA, RANDOM_SELECTION_ROSCA, PRE_DETERMINED_ROSCA }
   typesOfROSCA roscaType;
-  bool internal endOfROSCA = false;
-  bool internal forepersonSurplusCollected = false;
+  bool public endOfROSCA = false;
+  bool public forepersonSurplusCollected = false;
   // A discount is the difference between a winning bid and the pot value. totalDiscounts is the amount
   // of discounts accumulated so far, divided by the number of ROSCA participants.
   uint256 public totalDiscounts = 0;
 
   // Amount of fees reserved in the contract for fees.
-  uint256 internal totalFees = 0;
+  uint256 public totalFees = 0;
 
   // Round state variables
   uint256 public lowestBid = 0;
@@ -107,8 +107,8 @@ contract ROSCA {
   // 3. If escape hatch is activated, no contributions and/or withdrawals are allowed. The foreperson
   //    may call withdraw() to withdraw all of the contract's funds and then disperse them offline
   //    among the participants.
-  bool internal escapeHatchEnabled = false;
-  bool internal escapeHatchActive = false;
+  bool public escapeHatchEnabled = false;
+  bool public escapeHatchActive = false;
 
   struct User {
     uint256 credit;  // amount of funds user has contributed - winnings (not including discounts) so far
