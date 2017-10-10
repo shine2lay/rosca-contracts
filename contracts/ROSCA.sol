@@ -215,7 +215,7 @@ contract ROSCA {
     */
   function startRound() onlyIfRoscaNotEnded external {
     uint256 roundStartTime = startTime + (uint(currentRound)  * roundPeriodInSecs);
-    require(now >= roundStartTime ); // too early to start a new round.
+    assert(now >= roundStartTime ); // too early to start a new round.
 
     if (currentRound != 0) {
       cleanUpPreviousRound();
@@ -347,10 +347,10 @@ contract ROSCA {
   // the amount.
   function validateAndReturnContribution() internal returns (uint256) {  // dontMakePublic
     bool isEthRosca = (tokenContract == address(0));
-    require(isEthRosca || msg.value <= 0);  // token ROSCAs should not accept ETH
+    assert(isEthRosca || msg.value <= 0);  // token ROSCAs should not accept ETH
 
     uint256 value = (isEthRosca ? msg.value : tokenContract.allowance(msg.sender, address(this)));
-    require(value != 0);
+    assert(value != 0);
 
     if (isEthRosca) {
       return value;
@@ -500,7 +500,7 @@ contract ROSCA {
    */
   function endOfROSCARetrieveSurplus() onlyFromForeperson onlyIfRoscaEnded external {
     uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInSecs);
-    require(now >= roscaCollectionTime && !forepersonSurplusCollected);
+    assert(now >= roscaCollectionTime && !forepersonSurplusCollected);
 
     forepersonSurplusCollected = true;
     uint256 amountToCollect = getBalance() - totalFees;
