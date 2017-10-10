@@ -347,10 +347,10 @@ contract ROSCA {
   // the amount.
   function validateAndReturnContribution() internal returns (uint256) {  // dontMakePublic
     bool isEthRosca = (tokenContract == address(0));
-    assert(isEthRosca || msg.value <= 0);  // token ROSCAs should not accept ETH
+    require(isEthRosca || msg.value <= 0);  // token ROSCAs should not accept ETH
 
     uint256 value = (isEthRosca ? msg.value : tokenContract.allowance(msg.sender, address(this)));
-    assert(value != 0);
+    require(value != 0);
 
     if (isEthRosca) {
       return value;
