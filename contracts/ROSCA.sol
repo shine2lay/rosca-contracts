@@ -302,7 +302,7 @@ contract ROSCA {
     uint256 grossTotalFees = requiredContributions * membersAddresses.length;
 
     for (uint16 j = 0; j < membersAddresses.length; j++) {
-      User storage member = members[membersAddresses[j]];
+      User memory member = members[membersAddresses[j]];
       uint256 credit = member.credit;
       uint256 debit = requiredContributions;
       if (member.debt) {
