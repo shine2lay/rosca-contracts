@@ -374,7 +374,7 @@ contract ROSCA {
       // so we check whether their credit w/o that winning is non-delinquent.
       // check that credit must defaultPot (when debt is set to true, defaultPot was added to credit as winnings) +
       // currentRound in order to be out of debt
-      if (SafeMath.sub(member.credit + totalDiscounts, removeFees(membersAddresses.length * contributionSize)) >= requiredContribution()) {
+      if (SafeMath.sub(member.credit + totalDiscounts, removeFees(potSize())) >= requiredContribution()) {
           member.debt = false;
       }
     }
