@@ -48,7 +48,6 @@ contract ROSCA {
   event LogStartOfRound(uint256 currentRound);
   event LogNewLowestBid(uint256 bid, address winnerAddress, uint256 currentRound);
   event LogRoundFundsReleased(address winnerAddress, uint256 amount, uint256 currentRound);
-  event LogRoundNoWinner(uint256 currentRound);
   event LogFundsWithdrawal(address user, uint256 amount, uint256 currentRound);
   // Fired when withdrawer is entitled for a larger amount than the contract
   // actually holds (excluding fees). A LogFundsWithdrawal will follow
@@ -256,7 +255,7 @@ contract ROSCA {
   }
 
   function creditWinner() internal {
-    uint256 currentRoundTotalDiscounts = removeFees(SafeMath.mul(contributionSize, membersAddresses.length) - lowestBid);
+    uint256 currentRoundTotalDiscounts = removeFees(potSize() - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
     members[winnerAddress].credit += removeFees(lowestBid);
     members[winnerAddress].paid = true;
@@ -276,7 +275,7 @@ contract ROSCA {
       address candidate = membersAddresses[index];
       if (!members[candidate].paid) {
         winnerIndex = index;
-        if (members[candidate].credit + totalDiscounts >= SafeMath.mul(currentRound, contributionSize)) {
+        if (members[candidate].credit + totalDiscounts >= requiredContribution()) {
           // We found a non-delinquent winner.
           winnerAddress = candidate;
           break;
@@ -292,7 +291,7 @@ contract ROSCA {
       members[winnerAddress].debt = true;
     }
     // Set lowestBid to the right value since there was no winning bid.
-    lowestBid = SafeMath.mul(contributionSize, membersAddresses.length);
+    lowestBid = potSize();
     return winnerIndex;
   }
 
@@ -300,24 +299,23 @@ contract ROSCA {
   function recalculateTotalFees() {
     // Start with the max theoretical fees if no one was delinquent, and
     // reduce funds not actually contributed because of delinquencies.
-    uint256 requiredContributions = currentRound * contributionSize;
-    uint256 grossTotalFees = SafeMath.mul(requiredContributions, membersAddresses.length);
+    uint256 grossTotalFees = SafeMath.mul(requiredContribution(), membersAddresses.length);
 
     for (uint16 j = 0; j < membersAddresses.length; j++) {
       User memory member = members[membersAddresses[j]];
       uint256 credit = member.credit;
-      uint256 debit = requiredContributions;
+      uint256 debit = requiredContribution();
       if (member.debt) {
         // As a delinquent member won, we'll reduce the funds subject to fees by the default pot they must have won (since
         // they could not bid), to correctly calculate their delinquency.
-        debit = SafeMath.add(debit, removeFees(membersAddresses.length * contributionSize));
+        debit = SafeMath.add(debit, removeFees(potSize()));
       }
       if (credit + totalDiscounts < debit) {
         grossTotalFees = SafeMath.sub(grossTotalFees, (debit - credit - totalDiscounts));
       }
     }
 
-    totalFees = grossTotalFees * serviceFeeInThousandths / 1000;
+    totalFees = SafeMath.mul(grossTotalFees, serviceFeeInThousandths) / 1000;
   }
 
   // Swaps membersAddresses[winnerIndex] with membersAddresses[indexToSwap]. However,
@@ -376,8 +374,7 @@ contract ROSCA {
       // so we check whether their credit w/o that winning is non-delinquent.
       // check that credit must defaultPot (when debt is set to true, defaultPot was added to credit as winnings) +
       // currentRound in order to be out of debt
-      uint256 requiredContributions = SafeMath.mul(currentRound, contributionSize);
-      if (SafeMath.sub(member.credit + totalDiscounts, removeFees(membersAddresses.length * contributionSize)) >= requiredContributions) {
+      if (SafeMath.sub(member.credit + totalDiscounts, removeFees(membersAddresses.length * contributionSize)) >= requiredContribution()) {
           member.debt = false;
       }
     }
@@ -397,15 +394,15 @@ contract ROSCA {
     require(!members[msg.sender].paid  &&
         currentRound != 0 &&  // ROSCA hasn't started yet
         // participant not in good standing
-        members[msg.sender].credit + totalDiscounts >= (currentRound * contributionSize) &&
+        members[msg.sender].credit + totalDiscounts >= requiredContribution() &&
         // bid is less than minimum allowed
-        bid >= contributionSize * membersAddresses.length * MIN_DISTRIBUTION_PERCENT / 100);
+        bid >= SafeMath.mul(potSize(), MIN_DISTRIBUTION_PERCENT) / 100);
 
     // If winnerAddress is 0, this is the first bid, hence allow full pot.
     // Otherwise, make sure bid is low enough compared to previous bid.
     uint256 maxAllowedBid = winnerAddress == 0
-        ? contributionSize * membersAddresses.length
-        : lowestBid * MAX_NEXT_BID_RATIO / 100;
+        ? potSize()
+        : SafeMath.mul(lowestBid, MAX_NEXT_BID_RATIO) / 100;
     if (bid > maxAllowedBid) {
       // We don't throw as this may be hard for the frontend to predict on the
       // one hand because someone else might have bid at the same time,
@@ -436,12 +433,12 @@ contract ROSCA {
     uint256 totalCredit = members[msg.sender].credit + totalDiscounts;
 
     uint256 totalDebit = members[msg.sender].debt
-        ? removeFees(membersAddresses.length * contributionSize)  // this must be end of rosca
-        : SafeMath.mul(currentRound, contributionSize);
+        ? removeFees(potSize())  // this must be end of rosca
+        : requiredContribution();
     assert(totalDebit < totalCredit);  // nothing to withdraw
 
-    uint256 amountToWithdraw = totalCredit - totalDebit;
-    uint256 amountAvailable = getBalance() - totalFees;
+    uint256 amountToWithdraw = SafeMath.sub(totalCredit, totalDebit);
+    uint256 amountAvailable = SafeMath.sub(getBalance(), totalFees);
 
     if (amountAvailable < amountToWithdraw) {
       // This may happen if some participants are delinquent.
@@ -468,9 +465,9 @@ contract ROSCA {
 
     // if rosca have ended, we don't need to subtract as totalDebit should equal to default winnings
     if (members[user].debt && !endOfROSCA) {
-        totalCredit -= int256(removeFees(membersAddresses.length * contributionSize));
+        totalCredit -= int256(removeFees(potSize()));
     }
-    int256 totalDebit = int256(currentRound * contributionSize);
+    int256 totalDebit = int256(requiredContribution());
 
     return totalCredit - totalDebit;
   }
@@ -480,7 +477,7 @@ contract ROSCA {
    * the amount withdrawable by participants.
    */
   function getContractNetBalance() external constant returns(uint256) {
-    return getBalance() - totalFees;
+    return SafeMath.sub(getBalance(), totalFees);
   }
 
   /**
@@ -505,7 +502,7 @@ contract ROSCA {
     assert(now >= roscaCollectionTime && !forepersonSurplusCollected);
 
     forepersonSurplusCollected = true;
-    uint256 amountToCollect = getBalance() - totalFees;
+    uint256 amountToCollect = SafeMath.sub(getBalance(), totalFees);
     if (!sendFundsToMsgSender(amountToCollect)) {   // if the send() fails, restore the flag
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
@@ -569,5 +566,16 @@ contract ROSCA {
       tokenContract.transfer(foreperson, balance);
     }
     selfdestruct(foreperson);
+  }
+
+  /**
+   * Helper Functions
+   */
+  function potSize() internal returns (uint256) {
+    return SafeMath.mul(contributionSize, membersAddresses.length);
+  }
+
+  function requiredContribution() internal returns (uint256) {
+    return SafeMath.mul(contributionSize, currentRound);
   }
 }
