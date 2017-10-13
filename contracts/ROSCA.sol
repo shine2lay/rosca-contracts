@@ -48,7 +48,7 @@ contract ROSCA {
   event LogStartOfRound(uint256 currentRound);
   event LogBidSurpassed(uint256 prevBid, address prevWinnerAddress, uint256 currentRound);
   event LogNewLowestBid(uint256 bid, address winnerAddress, uint256 currentRound);
-  event LogRoundFundsReleased(address winnerAddress, uint256 amount, uint256 currentRound, uint256 roundDiscount);
+  event LogRoundFundsReleased(address winnerAddress, uint256 amount, uint256 roundDiscount, uint256 currentRound);
   event LogFundsWithdrawal(address user, uint256 amount, uint256 currentRound);
   // Fired when withdrawer is entitled for a larger amount than the contract
   // actually holds (excluding fees). A LogFundsWithdrawal will follow
@@ -261,7 +261,7 @@ contract ROSCA {
     totalDiscounts += roundDiscount;
     members[winnerAddress].credit += removeFees(lowestBid);
     members[winnerAddress].paid = true;
-    LogRoundFundsReleased(winnerAddress, lowestBid, currentRound, roundDiscount);
+    LogRoundFundsReleased(winnerAddress, lowestBid, roundDiscount, currentRound);
   }
 
   function findSemiRandomWinner(uint16 numUnpaidParticipants) internal returns (uint256) {
