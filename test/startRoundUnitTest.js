@@ -19,11 +19,11 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     }));
 
     it("watches for LogstartOfRound event", co(function* () {
-        utils.increaseTime(consts.START_TIME_DELAY);
+        utils.increaseTime(consts.START_TIME_DELAY + consts.ROUND_PERIOD_IN_SECS);
         let result = yield roscaHelper.startRound();
-        let log = result.logs[0];
+        let log = result.logs[1];
 
-        assert.equal(log.args.currentRound, 1, "Log didnt show currentRound properly");
+        assert.equal(log.args.currentRound.toString(), 2, "Log didnt show currentRound properly");
     }));
 
     it("watches for LogEndOfROSCA event", co(function* () {
@@ -33,8 +33,9 @@ contract('ROSCA startRound Unit Test', function(accounts) {
             endOfRoscaEvent.stopWatching();
             eventFired = true;
         });
+        utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-        for (let i = 0; i < consts.memberCount() + 1; i++) { // +1, to startRound
+        for (let i = 0; i < consts.memberCount(); i++) { // +1, to startRound
             utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
             yield roscaHelper.startRound();
             assert.isNotOk(eventFired);
@@ -45,7 +46,8 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     }));
 
     it("Throws when calling startRound before roundStartTime (including round = 0)", co(function* () {
-        for (let i = 0; i < consts.memberCount() + 1; i++) {
+        utils.increaseTime(consts.START_TIME_DELAY);
+        for (let i = 0; i < consts.memberCount(); i++) {
             yield utils.assertThrows(roscaHelper.startRound(),
               "expected calling startRound before roundStartTime to throw");
 

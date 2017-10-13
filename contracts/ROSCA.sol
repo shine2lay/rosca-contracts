@@ -71,7 +71,7 @@ contract ROSCA {
   // ROSCA parameters
   uint256 internal roundPeriodInSecs;
   uint16 internal serviceFeeInThousandths;
-  uint16 public currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
+  uint16 public currentRound = 1;  // rosca is started the moment it is created
   address internal foreperson;
   uint128 internal contributionSize;
   uint256 internal startTime;
