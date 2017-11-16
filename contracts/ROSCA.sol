@@ -217,7 +217,7 @@ contract ROSCA {
     */
   function startRound() onlyIfRoscaNotEnded external {
     uint256 roundStartTime = SafeMath.add(startTime, (SafeMath.mul(uint(currentRound), roundPeriodInSecs)));
-    assert(now >= roundStartTime ); // too early to start a new round.
+    require(now >= roundStartTime ); // too early to start a new round.
 
     if (currentRound != 0) {
       cleanUpPreviousRound();
@@ -444,7 +444,7 @@ contract ROSCA {
     uint256 totalDebit = members[msg.sender].debt
         ? removeFees(potSize())  // this must be end of rosca
         : requiredContribution();
-    assert(totalDebit < totalCredit);  // nothing to withdraw
+    require(totalDebit < totalCredit);  // nothing to withdraw
 
     uint256 amountToWithdraw = SafeMath.sub(totalCredit, totalDebit);
     uint256 amountAvailable = SafeMath.sub(getBalance(), totalFees);
@@ -508,7 +508,7 @@ contract ROSCA {
    */
   function endOfROSCARetrieveSurplus() onlyFromForeperson onlyIfRoscaEnded external {
     uint256 roscaCollectionTime = SafeMath.add(startTime, SafeMath.mul((membersAddresses.length + 1), roundPeriodInSecs));
-    assert(now >= roscaCollectionTime && !forepersonSurplusCollected);
+    require(now >= roscaCollectionTime && !forepersonSurplusCollected);
 
     forepersonSurplusCollected = true;
     uint256 amountToCollect = SafeMath.sub(getBalance(), totalFees);
