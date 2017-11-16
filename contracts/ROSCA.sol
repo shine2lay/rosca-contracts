@@ -108,6 +108,7 @@ contract ROSCA {
   //    among the participants.
   bool public escapeHatchEnabled = false;
   bool public escapeHatchActive = false;
+  bool private reentrancyLock = false;
 
   struct User {
     uint256 credit;  // amount of funds user has contributed - winnings (not including discounts) so far
@@ -119,6 +120,13 @@ contract ROSCA {
   ////////////
   // MODIFIERS
   ////////////
+  modifier nonReentrant() {
+    require(!reentrancyLock);
+    reentrancyLock = true;
+    _;
+    reentrancyLock = false;
+  }
+
   modifier onlyFromMember {
     require(members[msg.sender].alive);
     _;
@@ -436,7 +444,7 @@ contract ROSCA {
   /**
    * Withdraws available funds for msg.sender.
    */
-  function withdraw() onlyFromMember onlyIfEscapeHatchInactive external returns(bool success) {
+  function withdraw() onlyFromMember onlyIfEscapeHatchInactive nonReentrant external returns(bool success) {
     require (!members[msg.sender].debt || endOfROSCA); // delinquent winners need to first pay their debt
 
     uint256 totalCredit = members[msg.sender].credit + totalDiscounts;
