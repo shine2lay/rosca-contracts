@@ -175,7 +175,13 @@ contract ROSCA {
     * @dev Creates a new ROSCA and initializes the necessary variables. ROSCA starts after startTime.
     * Creator of the contract becomes foreperson but not a participant (unless creator's address
     *   is included in members_ parameter).
-    *
+    * @param erc20tokenContract
+    * @param roscaType BIDDING_ROSCA = 0, RANDOM_SELECTION_ROSCA = 1, PRE_DETERMINED_ROSCA = 2
+    * @param roundPeriodInSecs
+    * @param contributionSize
+    * @param startTime must be at least 15 mins ago
+    * @param members
+    * @param serviceFeeInThousandths
     *
     * If erc20TokenContract is 0, ETH is taken to be the currency of this ROSCA. Otherwise, this
     * contract assumes `erc20tokenContract` specifies an ERC20-compliant token contract.
@@ -241,6 +247,10 @@ contract ROSCA {
     }
   }
 
+  /**
+   * @dev determine the winner based on the bid, or if no bids were place, find a random winner and credit the
+   * user with winnings
+   */
   function cleanUpPreviousRound() internal {
     uint256 winnerIndex;
     bool winnerSelectedThroughBid = (winnerAddress != 0);
@@ -262,7 +272,10 @@ contract ROSCA {
     creditWinner();
     recalculateTotalFees();
   }
-
+  /**
+   * @dev update the winner's credit with the winning Bid amount or the default PotSize if there were no bid and
+   * roundDiscount is added to totalDiscounts
+   */
   function creditWinner() internal {
     if (lowestBid == 0) {
       lowestBid = potSize();
@@ -275,6 +288,12 @@ contract ROSCA {
     LogRoundFundsReleased(winnerAddress, lowestBid, roundDiscount, currentRound);
   }
 
+  /**
+   * @dev we choose a winner base current timestamp, giving priority to members in good standing.
+   * this is a non-Issue because by nature of ROSCA, each member can only win once
+   * @parm numUnpaidParticipants
+   * @returns uint256
+   */
   function findSemiRandomWinner(uint16 numUnpaidParticipants) internal returns (uint256) {
     address delinquentWinner = 0x0;
     uint256 winnerIndex;
@@ -308,7 +327,9 @@ contract ROSCA {
     return winnerIndex;
   }
 
-  // Recalculates that total fees that should be allocated in the contract.
+  /**
+   * @dev Recalculates that total fees that should be allocated in the contract.
+   */
   function recalculateTotalFees() internal {
     // Start with the max theoretical fees if no one was delinquent, and
     // reduce funds not actually contributed because of delinquencies.
@@ -331,8 +352,10 @@ contract ROSCA {
     totalFees = SafeMath.mul(grossTotalFees, serviceFeeInThousandths) / 1000;
   }
 
-  // Swaps membersAddresses[winnerIndex] with membersAddresses[indexToSwap]. However,
-  // if winner was selected through a bid, winnerIndex was not set, and we find it first.
+  /**
+   * @dev Swaps membersAddresses[winnerIndex] with membersAddresses[indexToSwap]. However,
+   * if winner was selected through a bid, winnerIndex was not set, and we find it first.
+   */
   function swapWinner(
     uint256 winnerIndex, bool winnerSelectedThroughBid, uint256 indexToSwap) internal {
     if (winnerSelectedThroughBid) {
@@ -350,14 +373,20 @@ contract ROSCA {
     membersAddresses[indexToSwap] = winnerAddress;
   }
 
-  // Calculates the specified amount net amount after fees.
+  /**
+   * @dev Calculates the specified amount net amount after fees.
+   * @returns uint256
+   */
   function removeFees(uint256 amount) internal constant returns (uint256) {
     // First multiply to reduce roundoff errors.
     return SafeMath.mul(amount, (1000 - serviceFeeInThousandths)) / 1000;
   }
 
-  // Validates a non-zero contribution from msg.sender and returns
-  // the amount.
+  /**
+   * @dev Validates a non-zero contribution from msg.sender and returns
+   * the amount.
+   * @returns uint256
+   */
   function validateAndReturnContribution() internal returns (uint256) {  // dontMakePublic
     bool isEthRosca = (tokenContract == address(0));
     require(isEthRosca || msg.value <= 0);  // token ROSCAs should not accept ETH
@@ -373,7 +402,7 @@ contract ROSCA {
   }
 
   /**
-   * Processes a periodic contribution. msg.sender must be one of the participants and will thus
+   * @dev Processes a periodic contribution. msg.sender must be one of the participants and will thus
    * identify the contributor.
    *
    * Any excess funds are withdrawable through withdraw() without fee.
@@ -396,12 +425,13 @@ contract ROSCA {
   }
 
   /**
-   * Registers a bid from msg.sender. Participant should call this method
+   * @dev Registers a bid from msg.sender. Participant should call this method
    * only if all of the following holds for her:
    * + Never won a round.
    * + Is in good standing (i.e. actual contributions, including this round's,
    *   plus any past earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
+   * @param bid The Bid amount to place in Wei
    */
   function bid(uint256 bid) onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive onlyBIDDING_ROSCA external {
     require(!members[msg.sender].paid  &&
@@ -442,7 +472,8 @@ contract ROSCA {
   }
 
   /**
-   * Withdraws available funds for msg.sender.
+   * @dev Withdraws available funds for msg.sender.
+   * @returns success False if the transfer fails
    */
   function withdraw() onlyFromMember onlyIfEscapeHatchInactive nonReentrant external returns(bool success) {
     require (!members[msg.sender].debt || endOfROSCA); // delinquent winners need to first pay their debt
@@ -474,8 +505,9 @@ contract ROSCA {
   }
 
   /**
-   * Returns how much a user can withdraw (positive return value),
+   * @dev Returns how much a user can withdraw (positive return value),
    * or how much they need to contribute to be in good standing (negative return value)
+   * @returns int256
    */
   function getParticipantBalance(address user) onlyFromMember external constant returns(int256) {
     int256 totalCredit = int256(members[user].credit + totalDiscounts);
@@ -490,15 +522,17 @@ contract ROSCA {
   }
 
   /**
-   * Returns the amount of funds this contract holds excluding fees. This is
+   * @dev Returns the amount of funds this contract holds excluding fees. This is
    * the amount withdrawable by participants.
+   * @returns uint256
    */
   function getContractNetBalance() external constant returns(uint256) {
     return SafeMath.sub(getBalance(), totalFees);
   }
 
   /**
-   * Returns the balance of this contract, in ETH or the ERC20 token involved.
+   * @dev Returns the balance of this contract, in ETH or the ERC20 token involved.
+   * @returns uint256
    */
   function getBalance() internal constant returns (uint256) {
     bool isEthRosca = (tokenContract == address(0));
@@ -549,7 +583,7 @@ contract ROSCA {
   }
 
   /**
-   * Allows the Escape Hatch Enabler (controlled by WeTrust) to enable the Escape Hatch in case of
+   * @dev Allows the Escape Hatch Enabler (controlled by WeTrust) to enable the Escape Hatch in case of
    * emergency (e.g. a major vulnerability found in the contract).
    */
   function enableEscapeHatch() onlyFromEscapeHatchEnabler external {
@@ -558,7 +592,7 @@ contract ROSCA {
   }
 
   /**
-   * Allows the foreperson to active the Escape Hatch after the Enabled enabled it. This will freeze all
+   * @dev Allows the foreperson to active the Escape Hatch after the Enabled enabled it. This will freeze all
    * contributions and withdrawals, and allow the foreperson to retrieve all funds into their own account,
    * to be dispersed offline to the other participants.
    */
@@ -570,7 +604,7 @@ contract ROSCA {
   }
 
   /**
-   * Can only be called by the foreperson after an escape hatch is activated,
+   * @dev Can only be called by the foreperson after an escape hatch is activated,
    * this sends all the funds to the foreperson by selfdestructing this contract.
    */
   function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive external {
@@ -585,13 +619,22 @@ contract ROSCA {
     selfdestruct(foreperson);
   }
 
-  /**
-   * Helper Functions
+	////////////////////
+	// HELPER FUNCTIONS
+	////////////////////
+
+	/**
+   * @dev calculates the default amount user can win in a round
+   * @returns uin256
    */
   function potSize() internal constant returns (uint256) {
     return SafeMath.mul(contributionSize, membersAddresses.length);
   }
 
+  /**
+   * @dev calculates the require amount of contribution for user to be in good standing
+   * @returns uint256
+   */
   function requiredContribution() internal constant returns (uint256) {
     return SafeMath.mul(contributionSize, currentRound);
   }
