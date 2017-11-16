@@ -301,7 +301,7 @@ contract ROSCA {
   }
 
   // Recalculates that total fees that should be allocated in the contract.
-  function recalculateTotalFees() {
+  function recalculateTotalFees() internal {
     // Start with the max theoretical fees if no one was delinquent, and
     // reduce funds not actually contributed because of delinquencies.
     uint256 grossTotalFees = SafeMath.mul(requiredContribution(), membersAddresses.length);
@@ -343,7 +343,7 @@ contract ROSCA {
   }
 
   // Calculates the specified amount net amount after fees.
-  function removeFees(uint256 amount) internal returns (uint256) {
+  function removeFees(uint256 amount) internal constant returns (uint256) {
     // First multiply to reduce roundoff errors.
     return SafeMath.mul(amount, (1000 - serviceFeeInThousandths)) / 1000;
   }
@@ -565,7 +565,7 @@ contract ROSCA {
    * Can only be called by the foreperson after an escape hatch is activated,
    * this sends all the funds to the foreperson by selfdestructing this contract.
    */
-  function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive {
+  function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive external {
     LogEmergencyWithdrawalPerformed(getBalance(), currentRound);
     // Send everything, including potential fees, to foreperson to disperse offline to participants.
     bool isEthRosca = (tokenContract == address(0));
@@ -580,11 +580,11 @@ contract ROSCA {
   /**
    * Helper Functions
    */
-  function potSize() internal returns (uint256) {
+  function potSize() internal constant returns (uint256) {
     return SafeMath.mul(contributionSize, membersAddresses.length);
   }
 
-  function requiredContribution() internal returns (uint256) {
+  function requiredContribution() internal constant returns (uint256) {
     return SafeMath.mul(contributionSize, currentRound);
   }
 }
