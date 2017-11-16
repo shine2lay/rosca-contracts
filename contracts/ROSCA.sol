@@ -175,13 +175,6 @@ contract ROSCA {
     * @dev Creates a new ROSCA and initializes the necessary variables. ROSCA starts after startTime.
     * Creator of the contract becomes foreperson but not a participant (unless creator's address
     *   is included in members_ parameter).
-    * @param erc20tokenContract
-    * @param roscaType BIDDING_ROSCA = 0, RANDOM_SELECTION_ROSCA = 1, PRE_DETERMINED_ROSCA = 2
-    * @param roundPeriodInSecs
-    * @param contributionSize
-    * @param startTime must be at least 15 mins ago
-    * @param members
-    * @param serviceFeeInThousandths
     *
     * If erc20TokenContract is 0, ETH is taken to be the currency of this ROSCA. Otherwise, this
     * contract assumes `erc20tokenContract` specifies an ERC20-compliant token contract.
@@ -291,8 +284,7 @@ contract ROSCA {
   /**
    * @dev we choose a winner base current timestamp, giving priority to members in good standing.
    * this is a non-Issue because by nature of ROSCA, each member can only win once
-   * @parm numUnpaidParticipants
-   * @returns uint256
+   * @return uint256
    */
   function findSemiRandomWinner(uint16 numUnpaidParticipants) internal returns (uint256) {
     address delinquentWinner = 0x0;
@@ -375,7 +367,7 @@ contract ROSCA {
 
   /**
    * @dev Calculates the specified amount net amount after fees.
-   * @returns uint256
+   * @return uint256
    */
   function removeFees(uint256 amount) internal constant returns (uint256) {
     // First multiply to reduce roundoff errors.
@@ -385,7 +377,7 @@ contract ROSCA {
   /**
    * @dev Validates a non-zero contribution from msg.sender and returns
    * the amount.
-   * @returns uint256
+   * @return uint256
    */
   function validateAndReturnContribution() internal returns (uint256) {  // dontMakePublic
     bool isEthRosca = (tokenContract == address(0));
@@ -473,7 +465,7 @@ contract ROSCA {
 
   /**
    * @dev Withdraws available funds for msg.sender.
-   * @returns success False if the transfer fails
+   * @return success False if the transfer fails
    */
   function withdraw() onlyFromMember onlyIfEscapeHatchInactive nonReentrant external returns(bool success) {
     require (!members[msg.sender].debt || endOfROSCA); // delinquent winners need to first pay their debt
@@ -507,7 +499,7 @@ contract ROSCA {
   /**
    * @dev Returns how much a user can withdraw (positive return value),
    * or how much they need to contribute to be in good standing (negative return value)
-   * @returns int256
+   * @return int256
    */
   function getParticipantBalance(address user) onlyFromMember external constant returns(int256) {
     int256 totalCredit = int256(members[user].credit + totalDiscounts);
@@ -524,7 +516,7 @@ contract ROSCA {
   /**
    * @dev Returns the amount of funds this contract holds excluding fees. This is
    * the amount withdrawable by participants.
-   * @returns uint256
+   * @return uint256
    */
   function getContractNetBalance() external constant returns(uint256) {
     return SafeMath.sub(getBalance(), totalFees);
@@ -532,7 +524,7 @@ contract ROSCA {
 
   /**
    * @dev Returns the balance of this contract, in ETH or the ERC20 token involved.
-   * @returns uint256
+   * @return uint256
    */
   function getBalance() internal constant returns (uint256) {
     bool isEthRosca = (tokenContract == address(0));
@@ -625,7 +617,7 @@ contract ROSCA {
 
 	/**
    * @dev calculates the default amount user can win in a round
-   * @returns uin256
+   * @return uin256
    */
   function potSize() internal constant returns (uint256) {
     return SafeMath.mul(contributionSize, membersAddresses.length);
@@ -633,7 +625,7 @@ contract ROSCA {
 
   /**
    * @dev calculates the require amount of contribution for user to be in good standing
-   * @returns uint256
+   * @return uint256
    */
   function requiredContribution() internal constant returns (uint256) {
     return SafeMath.mul(contributionSize, currentRound);
