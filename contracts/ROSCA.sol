@@ -606,18 +606,16 @@ contract ROSCA {
    * this sends all the funds to the foreperson by selfdestructing this contract.
    */
   function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive external {
-    LogEmergencyWithdrawalPerformed(getBalance(), currentRound);
-    bool fundTransferSuccess = false;
+	  LogEmergencyWithdrawalPerformed(getBalance(), currentRound);
+    bool failedSendingFunds = false;
     // Send everything, including potential fees, to foreperson to disperse offline to participants.
     bool isEthRosca = (tokenContract == address(0));
     if (!isEthRosca) {
       uint256 balance = tokenContract.balanceOf(address(this));
-      fundTransferSuccess = tokenContract.transfer(foreperson, balance);
-    } else {
-      fundTransferSuccess = msg.sender.send(this.balance);
+	    failedSendingFunds = tokenContract.transfer(foreperson, balance);
     }
 
-    if (fundTransferSuccess) {
+    if (!failedSendingFunds) {
       selfdestruct(foreperson);
     }
   }
