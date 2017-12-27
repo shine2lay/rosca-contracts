@@ -197,7 +197,7 @@ contract ROSCA {
     require(roundPeriodInSecs_ != 0 &&
       startTime_ >= SafeMath.sub(now, MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS) &&
       serviceFeeInThousandths_ <= MAX_FEE_IN_THOUSANDTHS &&
-      members_.length > 1 && members_.length <= 256); // min member count is 1 and max member count is 256
+      members_.length > 1 && members_.length <= 256); // member count must be 1 < x < 256
 
     roundPeriodInSecs = roundPeriodInSecs_;
     contributionSize = contributionSize_;
