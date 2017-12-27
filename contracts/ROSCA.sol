@@ -127,6 +127,11 @@ contract ROSCA {
     reentrancyLock = false;
   }
 
+  modifier onlyNonZeroAddress(address toCheck) {
+    require(toCheck != address(0));
+    _;
+  }
+
   modifier onlyFromMember {
     require(members[msg.sender].alive);
     _;
@@ -190,9 +195,9 @@ contract ROSCA {
       address[] members_,
       uint16 serviceFeeInThousandths_) {
     require(roundPeriodInSecs_ != 0 &&
-      startTime_ >= (now - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS) &&
+      startTime_ >= SafeMath.sub(now, MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS) &&
       serviceFeeInThousandths_ <= MAX_FEE_IN_THOUSANDTHS &&
-      members_.length > 0);
+      members_.length > 1 && members_.length <= 256); // min member count is 1 and max member count is 256
 
     roundPeriodInSecs = roundPeriodInSecs_;
     contributionSize = contributionSize_;
@@ -203,14 +208,15 @@ contract ROSCA {
 
     foreperson = msg.sender;
 
-    for (uint16 i = 0; i < members_.length; i++) {
+    for (uint8 i = 0; i < members_.length; i++) {
       addMember(members_[i]);
     }
 
     LogStartOfRound(currentRound);
   }
 
-  function addMember(address newMember) internal {
+  function addMember(address newMember) onlyNonZeroAddress(newMember) internal {
+
     require(!members[newMember].alive);  // already registered
 
     members[newMember] = User({paid: false , credit: 0, alive: true, debt: false});
@@ -245,7 +251,7 @@ contract ROSCA {
    * user with winnings
    */
   function cleanUpPreviousRound() internal {
-    uint256 winnerIndex;
+    uint256 winnerIndex = membersAddresses.length + 1; // to avoid default (0) to be winner
     bool winnerSelectedThroughBid = (winnerAddress != 0);
     uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
     // for pre-ordered ROSCA, pick the next person in the list (delinquent or not)
@@ -601,14 +607,19 @@ contract ROSCA {
    */
   function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive external {
     LogEmergencyWithdrawalPerformed(getBalance(), currentRound);
+    bool fundTransferSuccess = false;
     // Send everything, including potential fees, to foreperson to disperse offline to participants.
     bool isEthRosca = (tokenContract == address(0));
     if (!isEthRosca) {
       uint256 balance = tokenContract.balanceOf(address(this));
-      // we don't care much about the success of transfer` here as there's not much we can do.
-      tokenContract.transfer(foreperson, balance);
+      fundTransferSuccess = tokenContract.transfer(foreperson, balance);
+    } else {
+      fundTransferSuccess = msg.sender.send(this.balance);
     }
-    selfdestruct(foreperson);
+
+    if (fundTransferSuccess) {
+      selfdestruct(foreperson);
+    }
   }
 
 	////////////////////
