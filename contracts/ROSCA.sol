@@ -353,6 +353,7 @@ contract ROSCA {
     uint16 indexToSwap = numUnpaidParticipants - 1;
 
     if (winnerAddress == 0) {
+      // there are no bids this round, so find a random winner
       winnerIndex = findSemiRandomWinner(numUnpaidParticipants);
     } else {
       // Since winner was selected through a bid, we were not able to set winnerIndex, so search
