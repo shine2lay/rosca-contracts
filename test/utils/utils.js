@@ -4,7 +4,7 @@ let assert = require('chai').assert;
 let co = require("co").wrap;
 let consts = require("./consts.js");
 let Promise = require("bluebird");
-let ROSCATest = artifacts.require('ROSCATest.sol'); // eslint-disable-line
+let ROSCATestHelper = artifacts.require('test/ROSCATestHelper.sol'); // eslint-disable-line
 let ExampleToken = artifacts.require('test/ExampleToken.sol'); // eslint-disable-line
 let ERC20TokenInterface = artifacts.require('deps/ERC20TokenInterface.sol'); // eslint-disable-line
 
@@ -56,7 +56,7 @@ module.exports = {
 
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
-    return ROSCATest.new(
+    return ROSCATestHelper.new(
         ERC20Address, optRoscaType,
         optRoundPeriodInSecs, optcontributionSize, blockTime + optStartTimeDelay, optMemberList,
         optServicefeeInThousandths);
