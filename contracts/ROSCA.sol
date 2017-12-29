@@ -197,7 +197,7 @@ contract ROSCA {
     require(roundPeriodInSecs_ != 0 &&
       startTime_ >= SafeMath.sub(now, MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS) &&
       serviceFeeInThousandths_ <= MAX_FEE_IN_THOUSANDTHS &&
-      members_.length > 1 && members_.length <= 256); // member count must be 1 < x < 256
+      members_.length > 1 && members_.length <= 256); // member count must be 1 < x <= 256
 
     roundPeriodInSecs = roundPeriodInSecs_;
     contributionSize = contributionSize_;
@@ -251,21 +251,14 @@ contract ROSCA {
    * user with winnings
    */
   function cleanUpPreviousRound() internal {
-    uint256 winnerIndex = membersAddresses.length + 1; // to avoid default (0) to be winner
-    bool winnerSelectedThroughBid = (winnerAddress != 0);
-    uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
     // for pre-ordered ROSCA, pick the next person in the list (delinquent or not)
     if (roscaType == typesOfROSCA.PRE_DETERMINED_ROSCA) {
       winnerAddress = membersAddresses[currentRound - 1];
-    }
-    if (winnerAddress == 0) {
-      winnerIndex = findSemiRandomWinner(numUnpaidParticipants);
-    }
-    // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
-    // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
-    // next unpaid member).
-    if (roscaType != typesOfROSCA.PRE_DETERMINED_ROSCA) {
-      swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
+    } else {
+      // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
+      // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
+      // next unpaid member).
+      swapWinner();
     }
 
     creditWinner();
@@ -354,9 +347,14 @@ contract ROSCA {
    * @dev Swaps membersAddresses[winnerIndex] with membersAddresses[indexToSwap]. However,
    * if winner was selected through a bid, winnerIndex was not set, and we find it first.
    */
-  function swapWinner(
-    uint256 winnerIndex, bool winnerSelectedThroughBid, uint256 indexToSwap) internal {
-    if (winnerSelectedThroughBid) {
+  function swapWinner() internal {
+    uint256 winnerIndex;
+    uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
+    uint16 indexToSwap = numUnpaidParticipants - 1;
+
+    if (winnerAddress == 0) {
+      winnerIndex = findSemiRandomWinner(numUnpaidParticipants);
+    } else {
       // Since winner was selected through a bid, we were not able to set winnerIndex, so search
       // for the winner among the unpaid participants.
       for (uint16 i = 0; i <= indexToSwap; i++) {
@@ -606,16 +604,16 @@ contract ROSCA {
    * this sends all the funds to the foreperson by selfdestructing this contract.
    */
   function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive external {
-	  LogEmergencyWithdrawalPerformed(getBalance(), currentRound);
-    bool failedSendingFunds = false;
+    LogEmergencyWithdrawalPerformed(getBalance(), currentRound);
+    bool fundsTransferSuccess = false;
     // Send everything, including potential fees, to foreperson to disperse offline to participants.
     bool isEthRosca = (tokenContract == address(0));
     if (!isEthRosca) {
       uint256 balance = tokenContract.balanceOf(address(this));
-	    failedSendingFunds = tokenContract.transfer(foreperson, balance);
+      fundsTransferSuccess = tokenContract.transfer(foreperson, balance);
     }
 
-    if (!failedSendingFunds) {
+    if (fundsTransferSuccess || isEthRosca) {
       selfdestruct(foreperson);
     }
   }
@@ -626,7 +624,7 @@ contract ROSCA {
 
 	/**
    * @dev calculates the default amount user can win in a round
-   * @return uin256
+   * @return uint256
    */
   function potSize() internal constant returns (uint256) {
     return SafeMath.mul(contributionSize, membersAddresses.length);
