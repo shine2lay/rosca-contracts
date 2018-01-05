@@ -85,7 +85,7 @@ contract ROSCA {
   bool public endOfROSCA = false;
   bool public forepersonSurplusCollected = false;
   // A discount is the difference between a winning bid and the pot value. totalDiscounts is the amount
-  // of discounts accumulated so far, divided by the number of ROSCA participants.
+  // of discounts accumulated so far
   uint256 public totalDiscounts = 0;
 
   // Amount of fees reserved in the contract for fees.
