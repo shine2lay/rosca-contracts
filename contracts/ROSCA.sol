@@ -611,20 +611,20 @@ contract ROSCA {
     selfdestruct(foreperson);
   }
 
-	////////////////////
-	// HELPER FUNCTIONS
-	////////////////////
+  ////////////////////
+  // HELPER FUNCTIONS
+  ////////////////////
 
 
-	/**
-	 * @dev calculates the user's discount amount from the total discount
-	 * @return uint256
-	 */
-	function userTotalCredit(address memberAddress) internal constant returns (uint256) {
+  /**
+   * @dev calculates the user's discount amount from the total discount
+   * @return uint256
+   */
+  function userTotalCredit(address memberAddress) internal constant returns (uint256) {
     uint256 userDiscount = totalDiscounts / membersAddresses.length;
 
-		return SafeMath.add(members[memberAddress].credit, userDiscount);
-	}
+  	return SafeMath.add(members[memberAddress].credit, userDiscount);
+  }
 
 	/**
    * @dev calculates the default amount user can win in a round
