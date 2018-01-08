@@ -623,7 +623,7 @@ contract ROSCA {
   function userTotalCredit(address memberAddress) internal constant returns (uint256) {
     uint256 userDiscount = totalDiscounts / membersAddresses.length;
 
-  	return SafeMath.add(members[memberAddress].credit, userDiscount);
+    return SafeMath.add(members[memberAddress].credit, userDiscount);
   }
 
 	/**
